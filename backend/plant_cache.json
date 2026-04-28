@@ -1,0 +1,1457 @@
+[
+  {
+    "species": "Monstera deliciosa",
+    "common_name": "Swiss Cheese Plant",
+    "water": "Every 1–2 weeks; let the top 2 inches of soil dry out between waterings",
+    "sunlight": "Bright indirect light; tolerates medium light but grows slower",
+    "soil": "Well-draining aroid mix with perlite and orchid bark",
+    "humidity": "High humidity (60%+); mist weekly or use a pebble tray",
+    "placement": "Near a bright east- or west-facing window, away from AC vents",
+    "health_tips": [
+      "Yellow leaves usually mean overwatering — check drainage",
+      "Aerial roots are normal; you can tuck them into the soil",
+      "Wipe leaves monthly to keep pores clear"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Epipremnum aureum",
+    "common_name": "Golden Pothos",
+    "water": "Every 1–2 weeks; allow soil to dry out almost completely",
+    "sunlight": "Low to bright indirect light; highly adaptable",
+    "soil": "Standard well-draining potting mix",
+    "humidity": "Tolerates average household humidity",
+    "placement": "Shelves, hanging baskets, or trailing over furniture",
+    "health_tips": [
+      "Brown leaf tips = underwatering or low humidity",
+      "Yellow leaves = overwatering",
+      "Can be propagated easily in water"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Dracaena trifasciata",
+    "common_name": "Snake Plant",
+    "water": "Every 2–6 weeks; drought-tolerant — less is more",
+    "sunlight": "Low to bright indirect light; avoid harsh direct sun",
+    "soil": "Fast-draining cactus or succulent mix",
+    "humidity": "Tolerates dry air well",
+    "placement": "Works in almost any room, including low-light corners",
+    "health_tips": [
+      "Root rot from overwatering is the #1 killer",
+      "Mushy base = too much water",
+      "One of the best air-purifying plants"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Spathiphyllum wallisii",
+    "common_name": "Peace Lily",
+    "water": "Every 1–2 weeks; water thoroughly when top inch is dry",
+    "sunlight": "Low to medium indirect light; no direct sun",
+    "soil": "Rich, well-draining potting mix with organic matter",
+    "humidity": "Prefers high humidity; mist leaves regularly",
+    "placement": "Bathrooms, offices, or shaded corners — it thrives in low light",
+    "health_tips": [
+      "Drooping dramatically means it needs water immediately",
+      "Brown tips = fluoride sensitivity — use filtered water",
+      "Toxic to pets — keep out of reach"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Chlorophytum comosum",
+    "common_name": "Spider Plant",
+    "water": "Every 1–2 weeks; tolerates some drought",
+    "sunlight": "Bright to medium indirect light",
+    "soil": "Standard potting mix with good drainage",
+    "humidity": "Average household humidity works fine",
+    "placement": "Hanging baskets or high shelves to showcase trailing spiderettes",
+    "health_tips": [
+      "Brown tips from fluoride or salt buildup — use distilled water",
+      "Spiderettes can be propagated by placing in water",
+      "Very forgiving — great for beginners"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Ficus lyrata",
+    "common_name": "Fiddle Leaf Fig",
+    "water": "Every 1–2 weeks; allow top 2 inches to dry out",
+    "sunlight": "Bright indirect light; benefits from some morning direct sun",
+    "soil": "Fast-draining potting mix; never let it sit in water",
+    "humidity": "Moderate to high humidity preferred",
+    "placement": "Bright room away from drafts, heating vents, and cold windows",
+    "health_tips": [
+      "Hates being moved — pick a spot and leave it",
+      "Brown spots from overwatering, underwatering, or root rot",
+      "Wipe large leaves to maximize light absorption"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Zamioculcas zamiifolia",
+    "common_name": "ZZ Plant",
+    "water": "Every 2–3 weeks; extremely drought-tolerant",
+    "sunlight": "Low to bright indirect light; one of the most adaptable plants",
+    "soil": "Well-draining potting mix or cactus mix",
+    "humidity": "Tolerates dry indoor air without issue",
+    "placement": "Any room, including windowless offices with fluorescent light",
+    "health_tips": [
+      "Yellow leaves = overwatering; reduce frequency immediately",
+      "Stores water in rhizomes — never needs misting",
+      "Slow grower but nearly indestructible"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Ficus elastica",
+    "common_name": "Rubber Plant",
+    "water": "Every 1–2 weeks; let top layer dry before watering",
+    "sunlight": "Bright indirect light; variegated types need more light",
+    "soil": "Well-draining potting mix with perlite",
+    "humidity": "Moderate humidity; tolerates average home conditions",
+    "placement": "Bright room, east-facing window ideal",
+    "health_tips": [
+      "Wipe leaves regularly to keep them glossy and healthy",
+      "Milky sap is irritating — wear gloves when pruning",
+      "Leggy growth means insufficient light"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Strelitzia reginae",
+    "common_name": "Bird of Paradise",
+    "water": "Every 1–2 weeks in summer; reduce in winter",
+    "sunlight": "Full sun to bright indirect light; needs 4–6 hours of direct sun",
+    "soil": "Rich, well-draining potting mix",
+    "humidity": "Average to high humidity preferred",
+    "placement": "South- or west-facing window for best results",
+    "health_tips": [
+      "Needs a large pot to bloom indoors",
+      "Brown leaf edges from dry air or underwatering",
+      "Can take 3–5 years to bloom from seed indoors"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Nephrolepis exaltata",
+    "common_name": "Boston Fern",
+    "water": "Keep soil consistently moist; water when top feels slightly dry",
+    "sunlight": "Bright indirect light; no direct sun",
+    "soil": "Rich, moisture-retentive potting mix with peat or coco coir",
+    "humidity": "Very high humidity (50%+); use a humidifier or pebble tray",
+    "placement": "Bathrooms or kitchens with bright windows",
+    "health_tips": [
+      "Dropping fronds = too dry or low humidity",
+      "Mist daily in dry seasons",
+      "Repot every spring when roots fill the pot"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Aloe vera",
+    "common_name": "Aloe Vera",
+    "water": "Every 2–3 weeks; allow soil to dry completely between waterings",
+    "sunlight": "Bright indirect to direct sun; 6+ hours ideal",
+    "soil": "Cactus or succulent mix with excellent drainage",
+    "humidity": "Tolerates dry air; no misting needed",
+    "placement": "South- or west-facing windowsill",
+    "health_tips": [
+      "Soggy soil causes root rot within days",
+      "Brown, soft leaves = overwatering",
+      "Gel inside leaves is great for minor burns"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Crassula ovata",
+    "common_name": "Jade Plant",
+    "water": "Every 2–3 weeks in summer; once a month in winter",
+    "sunlight": "4+ hours of direct sun or very bright indirect light",
+    "soil": "Succulent or cactus mix with extra perlite",
+    "humidity": "Low to average; tolerates dry indoor air",
+    "placement": "South- or east-facing windowsill with maximum light",
+    "health_tips": [
+      "Wrinkled leaves = underwatering",
+      "Mushy stems = root rot from overwatering",
+      "Can live 20+ years with proper care"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Saintpaulia ionantha",
+    "common_name": "African Violet",
+    "water": "Bottom-water weekly; keep soil evenly moist but never soggy",
+    "sunlight": "Bright indirect light; grows well under grow lights",
+    "soil": "Lightweight, well-aerated African violet mix",
+    "humidity": "Average to moderate humidity (40–60%)",
+    "placement": "North- or east-facing window; avoid direct sun",
+    "health_tips": [
+      "Water leaves cause brown spots — always bottom water",
+      "Remove spent blooms to encourage continuous flowering",
+      "Rotate monthly for even, bushy growth"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Aglaonema commutatum",
+    "common_name": "Chinese Evergreen",
+    "water": "Every 1–2 weeks; let top 2 inches dry between waterings",
+    "sunlight": "Low to medium indirect light; variegated varieties need more",
+    "soil": "Well-draining potting mix with perlite",
+    "humidity": "Average household humidity; misting helps in winter",
+    "placement": "Offices, hallways, or any spot away from direct sun",
+    "health_tips": [
+      "Brown leaf tips from fluoride — use filtered water",
+      "Very tolerant of neglect; one of the easiest houseplants",
+      "Toxic to pets"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Dracaena marginata",
+    "common_name": "Dragon Tree",
+    "water": "Every 2 weeks; allow top half of soil to dry out",
+    "sunlight": "Bright indirect light; tolerates lower light",
+    "soil": "Well-draining potting mix",
+    "humidity": "Average household humidity is fine",
+    "placement": "Corners, entryways, or offices — architectural statement plant",
+    "health_tips": [
+      "Brown tips from fluoride — use filtered water",
+      "Yellow leaves = overwatering",
+      "Prune to keep compact and encourage branching"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Dypsis lutescens",
+    "common_name": "Areca Palm",
+    "water": "Every 1–2 weeks; keep soil lightly moist; never waterlogged",
+    "sunlight": "Bright indirect light; some morning sun is welcome",
+    "soil": "Well-draining potting mix with sand or perlite",
+    "humidity": "High humidity (50%+); mist fronds or use a humidifier",
+    "placement": "Bright living rooms, lobbies, or sunrooms",
+    "health_tips": [
+      "Yellow fronds = overwatering",
+      "Brown tips = underwatering or low humidity",
+      "One of the best air-humidifying plants"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Hedera helix",
+    "common_name": "English Ivy",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light; tolerates medium light",
+    "soil": "Well-draining all-purpose potting mix",
+    "humidity": "Moderate to high humidity preferred",
+    "placement": "Hanging baskets or trained on a trellis; cool locations preferred",
+    "health_tips": [
+      "Spider mites love dry conditions — mist regularly",
+      "Browning = too much direct sun or dry air",
+      "Toxic to pets and humans if ingested"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Philodendron hederaceum",
+    "common_name": "Heartleaf Philodendron",
+    "water": "Every 1–2 weeks; let top inch dry between waterings",
+    "sunlight": "Low to bright indirect light; very adaptable",
+    "soil": "Standard well-draining potting mix",
+    "humidity": "Average household humidity; tolerates dry air",
+    "placement": "Shelves, hanging baskets, or trained on a moss pole",
+    "health_tips": [
+      "Yellow leaves = overwatering",
+      "Leggy vines = insufficient light",
+      "Easy to propagate in water — great beginner plant"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Calathea orbifolia",
+    "common_name": "Calathea",
+    "water": "Every 1–2 weeks; keep soil evenly moist but not saturated",
+    "sunlight": "Low to medium indirect light; no direct sun ever",
+    "soil": "Well-draining potting mix with peat or coco coir",
+    "humidity": "Very high humidity (60%+); use a humidifier",
+    "placement": "Bathrooms or kitchens away from sun",
+    "health_tips": [
+      "Brown crispy edges = low humidity or fluoride in water; use rainwater",
+      "Leaves move (prayer motion) — normal and healthy",
+      "Sensitive plant; avoid cold drafts"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Maranta leuconeura",
+    "common_name": "Prayer Plant",
+    "water": "Every 1–2 weeks; keep soil consistently moist",
+    "sunlight": "Low to medium indirect light; avoid direct sun",
+    "soil": "Well-draining, moisture-retentive mix",
+    "humidity": "High humidity (50%+); mist regularly",
+    "placement": "Bathroom windowsill or tabletop in a humid room",
+    "health_tips": [
+      "Leaves fold up at night — this is normal",
+      "Brown spots from direct sun or cold water",
+      "Propagate by stem cuttings in spring"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Tradescantia zebrina",
+    "common_name": "Wandering Jew",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light; some direct sun deepens leaf color",
+    "soil": "Standard potting mix with good drainage",
+    "humidity": "Average household humidity",
+    "placement": "Hanging baskets near a bright window",
+    "health_tips": [
+      "Faded color = insufficient light",
+      "Pinch stems to keep bushy; prone to becoming leggy",
+      "Very easy to propagate — just stick cuttings in soil"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Haworthiopsis attenuata",
+    "common_name": "Zebra Plant",
+    "water": "Every 2–3 weeks; allow soil to dry completely",
+    "sunlight": "Bright indirect light; avoid harsh midday sun",
+    "soil": "Cactus or succulent mix with added grit",
+    "humidity": "Low humidity; no misting needed",
+    "placement": "Bright windowsill with filtered light",
+    "health_tips": [
+      "Mushy leaves = root rot from overwatering",
+      "Offsetting (pups) is normal — can be separated and repotted",
+      "Stays compact; rarely needs repotting"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Echeveria elegans",
+    "common_name": "Echeveria",
+    "water": "Every 2–3 weeks; allow soil to dry fully between waterings",
+    "sunlight": "Full sun to bright indirect light; 4–6 hours daily",
+    "soil": "Gritty succulent or cactus mix",
+    "humidity": "Low; avoid humid environments",
+    "placement": "South-facing windowsill or outdoors in summer",
+    "health_tips": [
+      "Etiolation (stretching toward light) means insufficient light",
+      "Water at base — wet rosette causes rot",
+      "Offsets can be repotted into new plants"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Peperomia obtusifolia",
+    "common_name": "Baby Rubber Plant",
+    "water": "Every 1–2 weeks; let soil dry halfway before watering",
+    "sunlight": "Medium to bright indirect light",
+    "soil": "Well-draining potting mix; semi-succulent so it holds water in leaves",
+    "humidity": "Average household humidity",
+    "placement": "Desk, shelf, or tabletop away from cold drafts",
+    "health_tips": [
+      "Mushy stems from overwatering; err on the dry side",
+      "Slow grower — don't repot too frequently",
+      "Propagate from single leaves"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Pilea peperomioides",
+    "common_name": "Chinese Money Plant",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light; rotate weekly for even growth",
+    "soil": "Well-draining potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Near a bright window; keep away from direct afternoon sun",
+    "health_tips": [
+      "Curling leaves = underwatering or too much direct sun",
+      "Yellow leaves = overwatering",
+      "Produces pups freely — share with friends"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Senecio rowleyanus",
+    "common_name": "String of Pearls",
+    "water": "Every 2–3 weeks; allow soil to dry fully; do not mist",
+    "sunlight": "Bright indirect to direct light; 3–4 hours of sun daily",
+    "soil": "Cactus or succulent mix with extra perlite",
+    "humidity": "Low; dry air is fine",
+    "placement": "High shelf or hanging planter near a bright window",
+    "health_tips": [
+      "Shriveled pearls = underwatering",
+      "Mushy pearls = overwatering or root rot",
+      "Trail 2–3 feet when mature"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Oxalis triangularis",
+    "common_name": "Purple Shamrock",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light; some direct sun intensifies color",
+    "soil": "Well-draining potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Bright windowsill or countertop",
+    "health_tips": [
+      "Goes dormant in summer heat — this is normal, not death",
+      "Leaves fold at night and reopen with morning light",
+      "Bulbs can be divided and shared"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Begonia rex",
+    "common_name": "Rex Begonia",
+    "water": "Every 1–2 weeks; allow top inch to dry; sensitive to overwatering",
+    "sunlight": "Bright indirect light; no direct sun",
+    "soil": "Light, airy, well-draining mix with perlite",
+    "humidity": "High humidity (50%+); do not mist leaves directly",
+    "placement": "Bright room with filtered light",
+    "health_tips": [
+      "Mildew on leaves = too humid with poor airflow",
+      "Dry brown edges = low humidity",
+      "Remove spent leaves to prevent disease"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Fittonia albivenis",
+    "common_name": "Nerve Plant",
+    "water": "Every 3–5 days; keep soil consistently moist",
+    "sunlight": "Low to medium indirect light; perfect for terrariums",
+    "soil": "Moisture-retentive mix with peat or coco coir",
+    "humidity": "Very high humidity (60%+); thrives in terrariums",
+    "placement": "Terrariums, bathrooms, or covered dishes",
+    "health_tips": [
+      "Wilts dramatically when thirsty but bounces back fast",
+      "Trim to keep bushy and prevent leggy growth",
+      "Perfect terrarium plant because it loves enclosed humidity"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Codiaeum variegatum",
+    "common_name": "Croton",
+    "water": "Every 1–2 weeks; keep soil evenly moist",
+    "sunlight": "Bright direct or indirect light; needs lots of light for vivid color",
+    "soil": "Rich, well-draining potting mix",
+    "humidity": "High humidity (50%+); mist regularly",
+    "placement": "Brightest spot in the home; south-facing window ideal",
+    "health_tips": [
+      "Leaf drop when moved — give it time to adjust",
+      "Faded color = insufficient light",
+      "Check for spider mites in dry conditions"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Dracaena fragrans",
+    "common_name": "Corn Plant",
+    "water": "Every 1–2 weeks; allow top half to dry between waterings",
+    "sunlight": "Bright to medium indirect light",
+    "soil": "Well-draining all-purpose potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Living rooms, offices — tolerates lower light well",
+    "health_tips": [
+      "Brown tips from fluoride — use filtered water",
+      "One of NASA's top air-purifying plants",
+      "Toxic to cats and dogs"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Howea forsteriana",
+    "common_name": "Kentia Palm",
+    "water": "Every 1–2 weeks; allow top half to dry; sensitive to overwatering",
+    "sunlight": "Medium to bright indirect light; tolerates low light",
+    "soil": "Well-draining palm mix",
+    "humidity": "Moderate to high humidity preferred",
+    "placement": "Large living rooms or offices with good ambient light",
+    "health_tips": [
+      "Slow grower; very long-lived",
+      "Yellow fronds = overwatering",
+      "Brown tips = dry air or underwatering"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Chamaedorea elegans",
+    "common_name": "Parlor Palm",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Low to medium indirect light; one of the most shade-tolerant palms",
+    "soil": "Well-draining potting mix",
+    "humidity": "Average to moderate humidity",
+    "placement": "Shaded corners, hallways, or low-light rooms",
+    "health_tips": [
+      "Overwatering is the most common mistake",
+      "Slow grower — patience required",
+      "Non-toxic; safe for pets"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Alocasia macrorrhizos",
+    "common_name": "Elephant Ear",
+    "water": "Every 1–2 weeks; keep soil lightly moist but not wet",
+    "sunlight": "Bright indirect light; some morning direct sun is fine",
+    "soil": "Aroid mix with perlite and orchid bark for drainage",
+    "humidity": "Very high humidity (60%+); mist or humidify",
+    "placement": "Warm, bright room — away from cold drafts",
+    "health_tips": [
+      "Goes dormant in cool seasons — reduce watering",
+      "Yellow leaves = overwatering",
+      "Toxic to pets and humans"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Hoya carnosa",
+    "common_name": "Wax Plant",
+    "water": "Every 2 weeks; allow soil to dry fully between waterings",
+    "sunlight": "Bright indirect light; tolerates some direct morning sun",
+    "soil": "Well-draining orchid or aroid mix",
+    "humidity": "Average to moderate humidity",
+    "placement": "Hanging basket near a bright window",
+    "health_tips": [
+      "Don't remove spent flower spurs — new blooms grow from them",
+      "Blooms when slightly root-bound",
+      "Wrinkled leaves signal it's time to water"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Hoya kerrii",
+    "common_name": "Sweetheart Hoya",
+    "water": "Every 2–3 weeks; allow soil to dry fully",
+    "sunlight": "Bright indirect light",
+    "soil": "Well-draining succulent or orchid mix",
+    "humidity": "Average household humidity",
+    "placement": "Bright shelf or windowsill",
+    "health_tips": [
+      "Single-leaf cuttings sold in stores won't grow into full plants",
+      "Extremely slow growing",
+      "Wrinkled leaves mean it needs water"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Sedum morganianum",
+    "common_name": "Burro's Tail",
+    "water": "Every 2–3 weeks; allow soil to dry completely",
+    "sunlight": "Bright indirect to direct light; 4–6 hours daily",
+    "soil": "Cactus or succulent mix",
+    "humidity": "Low; dry air preferred",
+    "placement": "Hanging planter near a sunny window",
+    "health_tips": [
+      "Leaves drop easily — handle with care",
+      "Shriveled leaves = underwatering",
+      "Dropped leaves root easily for propagation"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Schlumbergera bridgesii",
+    "common_name": "Christmas Cactus",
+    "water": "Every 2–3 weeks; keep slightly moist during growing season",
+    "sunlight": "Bright indirect light; avoid harsh direct sun",
+    "soil": "Well-draining cactus mix with added organic matter",
+    "humidity": "Average household humidity",
+    "placement": "Bright room away from drafts",
+    "health_tips": [
+      "Needs 14 hours of darkness for 6 weeks to trigger blooming",
+      "Not a true cactus — does not like bone-dry soil",
+      "Cool temperatures (50–60°F) encourage bud set"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Anthurium andraeanum",
+    "common_name": "Anthurium",
+    "water": "Every 1–2 weeks; allow top 2 inches to dry",
+    "sunlight": "Bright indirect light; no direct sun on flowers",
+    "soil": "Chunky, well-draining aroid or orchid mix",
+    "humidity": "High humidity (60%+); mist regularly",
+    "placement": "Bright room away from direct afternoon sun",
+    "health_tips": [
+      "Brown leaf tips = low humidity or fertilizer burn",
+      "Yellow leaves = overwatering",
+      "Blooms last up to 3 months; deadhead to encourage new flowers"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Dieffenbachia seguine",
+    "common_name": "Dumb Cane",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Medium to bright indirect light",
+    "soil": "Well-draining potting mix",
+    "humidity": "Moderate humidity preferred",
+    "placement": "Living rooms or offices with bright to medium light",
+    "health_tips": [
+      "Toxic — causes mouth numbness if ingested; keep away from pets and children",
+      "Yellow leaves = overwatering",
+      "Rotate for even growth"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Schefflera actinophylla",
+    "common_name": "Umbrella Plant",
+    "water": "Every 1–2 weeks; allow top half of soil to dry",
+    "sunlight": "Bright indirect light; tolerates medium light",
+    "soil": "Well-draining all-purpose potting mix",
+    "humidity": "Average to moderate humidity",
+    "placement": "Bright living rooms or entryways",
+    "health_tips": [
+      "Susceptible to spider mites — inspect leaf undersides",
+      "Yellow leaves = overwatering",
+      "Can be pruned to control height"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Phalaenopsis amabilis",
+    "common_name": "Moth Orchid",
+    "water": "Every 7–10 days; water thoroughly then let dry; never let sit in water",
+    "sunlight": "Bright indirect light; east-facing window ideal",
+    "soil": "Orchid bark mix with no regular potting soil",
+    "humidity": "Moderate to high humidity (50–70%)",
+    "placement": "East- or west-facing windowsill away from drafts",
+    "health_tips": [
+      "Aerial roots outside the pot are healthy — don't bury them",
+      "Rebloom by placing in cooler spot (60°F nights) for 4 weeks",
+      "Yellow leaves on bottom = natural aging; remove cleanly"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Beaucarnea recurvata",
+    "common_name": "Ponytail Palm",
+    "water": "Every 2–4 weeks; very drought-tolerant; stores water in swollen base",
+    "sunlight": "Full sun to bright indirect light",
+    "soil": "Cactus or succulent mix with excellent drainage",
+    "humidity": "Low to average; tolerates dry indoor air",
+    "placement": "Sunny windowsill or patio in summer",
+    "health_tips": [
+      "Not a true palm — related to agaves",
+      "Overwatering is the main cause of death",
+      "Can live for decades; becomes a striking tree"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Yucca elephantipes",
+    "common_name": "Yucca",
+    "water": "Every 2–3 weeks; allow soil to dry completely",
+    "sunlight": "Full sun to bright indirect light",
+    "soil": "Sandy, well-draining cactus mix",
+    "humidity": "Low; tolerates very dry air",
+    "placement": "Sunniest room in the house or patio in summer",
+    "health_tips": [
+      "Sharp leaf tips — handle carefully",
+      "Yellow lower leaves are natural aging; remove",
+      "Root rot from overwatering is the biggest risk"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Tillandsia ionantha",
+    "common_name": "Air Plant",
+    "water": "Soak in water for 20–30 minutes weekly; shake off excess water",
+    "sunlight": "Bright indirect light; avoid direct midday sun",
+    "soil": "No soil needed; mount on wood, cork, or in a glass vessel",
+    "humidity": "High humidity helps; mist between soakings",
+    "placement": "Bright shelves, mounted on driftwood, or in terrariums",
+    "health_tips": [
+      "Always shake excess water out after soaking to prevent rot",
+      "Turns reddish before blooming — a good sign",
+      "After blooming it will produce pups before dying"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Ceropegia woodii",
+    "common_name": "String of Hearts",
+    "water": "Every 2 weeks; allow soil to dry completely",
+    "sunlight": "Bright indirect to some direct light",
+    "soil": "Succulent or cactus mix with extra perlite",
+    "humidity": "Average household humidity; tolerates dry air",
+    "placement": "High shelf, macrame hanger, or windowsill",
+    "health_tips": [
+      "Pale, washed-out leaves = too little light",
+      "Produces small tubers along stems that can be planted",
+      "Very drought-tolerant once established"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Kalanchoe blossfeldiana",
+    "common_name": "Kalanchoe",
+    "water": "Every 2 weeks; allow soil to dry between waterings",
+    "sunlight": "Bright indirect light; some direct morning sun is fine",
+    "soil": "Well-draining cactus or succulent mix",
+    "humidity": "Low to average",
+    "placement": "Bright windowsill; outdoors in summer",
+    "health_tips": [
+      "14 hours of darkness for 6 weeks triggers re-blooming",
+      "Remove spent blooms to keep tidy",
+      "Toxic to cats and dogs"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Cyclamen persicum",
+    "common_name": "Cyclamen",
+    "water": "Bottom-water when soil dries; avoid wetting crown or leaves",
+    "sunlight": "Bright indirect light; cool temperatures (50–60°F)",
+    "soil": "Well-draining, slightly acidic potting mix",
+    "humidity": "Moderate humidity",
+    "placement": "Cool bright room; near north-facing window in winter",
+    "health_tips": [
+      "Goes dormant in summer — reduce water until new growth appears",
+      "Yellowing foliage in spring is normal dormancy, not disease",
+      "Loves cool rooms; struggles above 68°F"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Euphorbia milii",
+    "common_name": "Crown of Thorns",
+    "water": "Every 2–3 weeks; allow soil to dry between waterings",
+    "sunlight": "Full sun to bright indirect light; 3–4 hours direct sun daily",
+    "soil": "Cactus or succulent mix",
+    "humidity": "Low; tolerates dry air",
+    "placement": "Sunniest window; south-facing preferred",
+    "health_tips": [
+      "Milky sap is irritating — wear gloves",
+      "Blooms year-round with enough light",
+      "Drought-tolerant; overwatering causes leaf drop"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Caladium bicolor",
+    "common_name": "Caladium",
+    "water": "Every 1–2 weeks; keep soil evenly moist during growing season",
+    "sunlight": "Medium indirect light; direct sun burns the leaves",
+    "soil": "Rich, moisture-retentive mix with perlite",
+    "humidity": "Very high humidity (60%+)",
+    "placement": "Shaded patio in summer; bright indirect spot indoors",
+    "health_tips": [
+      "Goes dormant in fall — stop watering; store tubers dry",
+      "Toxic to pets and humans",
+      "Stunning seasonal display plant"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Ctenanthe burle-marxii",
+    "common_name": "Fishbone Prayer Plant",
+    "water": "Every 1–2 weeks; keep evenly moist",
+    "sunlight": "Low to medium indirect light",
+    "soil": "Well-draining, moisture-retentive mix",
+    "humidity": "High humidity preferred",
+    "placement": "Bathrooms or any humid room away from direct sun",
+    "health_tips": [
+      "Brown crispy edges = low humidity",
+      "Leaves fold up at night — this is normal",
+      "Related to Calathea; similar care needs"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Philodendron gloriosum",
+    "common_name": "Gloriosum Philodendron",
+    "water": "Every 1–2 weeks; allow top 2 inches to dry",
+    "sunlight": "Bright indirect light",
+    "soil": "Chunky aroid mix with orchid bark and perlite",
+    "humidity": "High humidity (60%+)",
+    "placement": "Bright room; grows as a ground creeper — not a climber",
+    "health_tips": [
+      "Velvet leaves are delicate — do not mist directly",
+      "Root rot is common; use very well-draining mix",
+      "Highly collectible; leaves can reach 3 feet"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Monstera adansonii",
+    "common_name": "Swiss Cheese Vine",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright to medium indirect light",
+    "soil": "Well-draining aroid mix",
+    "humidity": "High humidity preferred (60%+)",
+    "placement": "Hanging basket or climbing on a moss pole",
+    "health_tips": [
+      "Smaller, more delicate than M. deliciosa",
+      "Fewer holes than expected = not enough light",
+      "Vines can reach 10–13 feet"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Pachira aquatica",
+    "common_name": "Money Tree",
+    "water": "Every 1–2 weeks; allow top 2–3 inches to dry",
+    "sunlight": "Bright indirect light; tolerates medium light",
+    "soil": "Well-draining potting mix with perlite",
+    "humidity": "Moderate to high humidity",
+    "placement": "Bright room away from direct sun and cold drafts",
+    "health_tips": [
+      "Yellow leaves = overwatering",
+      "Root rot is common — ensure drainage holes",
+      "Braided trunk is decorative; don't untangle it"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Aspidistra elatior",
+    "common_name": "Cast Iron Plant",
+    "water": "Every 2–3 weeks; drought-tolerant",
+    "sunlight": "Low light; one of the most shade-tolerant houseplants",
+    "soil": "Any well-draining potting mix",
+    "humidity": "Tolerates dry air well",
+    "placement": "Dark hallways, offices, or corners with minimal light",
+    "health_tips": [
+      "Nearly indestructible; recovers from neglect",
+      "Avoid direct sun — leaves will scorch",
+      "Slow grower; very long-lived"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Sansevieria cylindrica",
+    "common_name": "Cylindrical Snake Plant",
+    "water": "Every 2–6 weeks; extremely drought-tolerant",
+    "sunlight": "Low to bright indirect light",
+    "soil": "Cactus or succulent mix",
+    "humidity": "Tolerates dry air",
+    "placement": "Any room; a popular architectural plant",
+    "health_tips": [
+      "Overwatering causes mushy bases and root rot",
+      "Often sold braided — purely decorative",
+      "Very forgiving of neglect"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Neoregelia carolinae",
+    "common_name": "Bromeliad",
+    "water": "Keep central cup filled with water; water soil monthly",
+    "sunlight": "Bright indirect light; some direct morning sun is fine",
+    "soil": "Bromeliad or orchid mix; or mount on wood",
+    "humidity": "Moderate to high humidity",
+    "placement": "Bright spot indoors; excellent patio plant",
+    "health_tips": [
+      "Change the cup water monthly to prevent stagnation",
+      "Blooms once then dies but produces pups",
+      "Pups can be detached and potted when 6 inches tall"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Streptocarpus saxorum",
+    "common_name": "Cape Primrose",
+    "water": "Every 1–2 weeks; bottom-water preferred",
+    "sunlight": "Bright indirect light; good under grow lights",
+    "soil": "Light, well-draining African violet mix",
+    "humidity": "Moderate humidity",
+    "placement": "East- or north-facing windowsill; avoid direct sun",
+    "health_tips": [
+      "Deadhead spent flowers to encourage continuous blooming",
+      "Overwatering is the main risk",
+      "Propagate from leaf cuttings"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Portulacaria afra",
+    "common_name": "Elephant Bush",
+    "water": "Every 2–3 weeks; allow soil to dry completely",
+    "sunlight": "Full sun to bright indirect light",
+    "soil": "Cactus or succulent mix",
+    "humidity": "Low; tolerates dry conditions",
+    "placement": "Sunny window or outdoors in summer",
+    "health_tips": [
+      "Looks like a mini jade plant but more drought-tolerant",
+      "Excellent for bonsai training",
+      "Edible leaves; used in salads in South Africa"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Euphorbia trigona",
+    "common_name": "African Milk Tree",
+    "water": "Every 2–3 weeks; allow soil to dry fully",
+    "sunlight": "Full sun to bright indirect light",
+    "soil": "Cactus or succulent mix",
+    "humidity": "Low; tolerates dry air",
+    "placement": "Sunniest window available",
+    "health_tips": [
+      "White milky sap is toxic and irritating — wear gloves",
+      "Not a true cactus but looks like one",
+      "Can grow 6–8 feet tall indoors"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Pelargonium graveolens",
+    "common_name": "Scented Geranium",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Full sun to bright indirect light",
+    "soil": "Well-draining potting mix",
+    "humidity": "Low to moderate",
+    "placement": "Sunny windowsill; patio in summer",
+    "health_tips": [
+      "Leggy growth means insufficient light",
+      "Deadhead to keep blooming",
+      "Strongly scented leaves repel some insects"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Fatsia japonica",
+    "common_name": "Japanese Aralia",
+    "water": "Every 1–2 weeks; keep soil evenly moist",
+    "sunlight": "Medium to bright indirect light; tolerates shade",
+    "soil": "Rich, well-draining potting mix",
+    "humidity": "Average to moderate humidity",
+    "placement": "Cool, bright rooms; excellent in entryways",
+    "health_tips": [
+      "Prefers cooler temperatures (55–65°F)",
+      "Yellow leaves = overwatering",
+      "Architectural foliage; tropical look in temperate climates"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Epipremnum pinnatum",
+    "common_name": "Dragon Tail Pothos",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light for fenestration development",
+    "soil": "Well-draining aroid mix",
+    "humidity": "Moderate to high humidity",
+    "placement": "Tall shelf or moss pole for climbing; leaves fenestrate when mature",
+    "health_tips": [
+      "Leaves develop splits when given a pole to climb",
+      "Similar to pothos but develops more dramatic adult foliage",
+      "Often confused with Rhaphidophora"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Monstera thai constellation",
+    "common_name": "Thai Constellation Monstera",
+    "water": "Every 1–2 weeks; allow top 2 inches to dry",
+    "sunlight": "Bright indirect light; variegated areas need more light to photosynthesize",
+    "soil": "Chunky aroid mix with perlite and orchid bark",
+    "humidity": "High humidity (60%+)",
+    "placement": "Brightest spot available without direct harsh sun",
+    "health_tips": [
+      "Variegated areas can't produce chlorophyll; avoid long dark periods",
+      "Slower grower than standard Monstera",
+      "Tissue-cultured; very stable variegation"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Rhaphidophora tetrasperma",
+    "common_name": "Mini Monstera",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light",
+    "soil": "Well-draining aroid mix",
+    "humidity": "Moderate to high humidity",
+    "placement": "Moss pole or trellis for climbing; fast grower",
+    "health_tips": [
+      "Not actually a Monstera — genus Rhaphidophora",
+      "Fenestrations develop as it matures",
+      "One of the fastest-growing aroids"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Guzmania lingulata",
+    "common_name": "Scarlet Star Bromeliad",
+    "water": "Fill central cup with water; mist leaves; water soil lightly monthly",
+    "sunlight": "Bright indirect light; no direct sun",
+    "soil": "Bromeliad or orchid mix",
+    "humidity": "High humidity preferred",
+    "placement": "Bright bathroom or tropical display",
+    "health_tips": [
+      "Blooms once; parent plant dies but produces pups",
+      "Change cup water monthly to prevent bacteria",
+      "Striking red bract lasts months"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Aeschynanthus radicans",
+    "common_name": "Lipstick Plant",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light; some direct morning sun encouraged",
+    "soil": "Light, airy orchid or African violet mix",
+    "humidity": "High humidity preferred",
+    "placement": "Hanging basket near a bright window",
+    "health_tips": [
+      "Needs cool nights (55°F) to initiate blooming",
+      "Tubular red flowers emerge from dark calyces",
+      "Trim after flowering to keep bushy"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Columnea gloriosa",
+    "common_name": "Goldfish Plant",
+    "water": "Every 1–2 weeks; keep evenly moist",
+    "sunlight": "Bright indirect light",
+    "soil": "Light, well-draining mix",
+    "humidity": "High humidity preferred; don't mist flowers",
+    "placement": "Hanging basket in a bright humid room",
+    "health_tips": [
+      "Orange flowers look like leaping goldfish",
+      "Cool winter temperatures encourage spring flowering",
+      "Sensitive to cold water — use room-temperature water"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Peperomia caperata",
+    "common_name": "Ripple Peperomia",
+    "water": "Every 1–2 weeks; let soil dry halfway",
+    "sunlight": "Medium to bright indirect light",
+    "soil": "Well-draining potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Desk or shelf away from drafts",
+    "health_tips": [
+      "Semi-succulent; stores water in thick leaves",
+      "Mushy stems = root rot from overwatering",
+      "Propagate from single leaves"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Asparagus setaceus",
+    "common_name": "Asparagus Fern",
+    "water": "Every 1–2 weeks; keep soil lightly moist",
+    "sunlight": "Bright indirect light",
+    "soil": "Well-draining potting mix",
+    "humidity": "Moderate to high humidity; mist regularly",
+    "placement": "Bright room; beautiful as a trailing or accent plant",
+    "health_tips": [
+      "Not a true fern — actually in the asparagus family",
+      "Yellow needles = underwatering or low humidity",
+      "Berries are toxic to pets"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Gynura aurantiaca",
+    "common_name": "Purple Passion Plant",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect to some direct light; light intensifies purple color",
+    "soil": "Well-draining potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Bright windowsill; hanging basket to display trailing stems",
+    "health_tips": [
+      "Pinch tips to keep bushy; gets leggy quickly",
+      "Flowers smell unpleasant — remove to avoid odor",
+      "Vivid purple fuzz is the main attraction"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Coffea arabica",
+    "common_name": "Coffee Plant",
+    "water": "Every 1–2 weeks; keep soil evenly moist",
+    "sunlight": "Bright indirect light; no direct harsh sun",
+    "soil": "Slightly acidic, well-draining potting mix",
+    "humidity": "Moderate to high humidity",
+    "placement": "Bright room; east-facing window ideal",
+    "health_tips": [
+      "Can eventually produce coffee cherries indoors with enough light",
+      "Yellow leaves = overwatering or poor drainage",
+      "Needs warmth; sensitive to temperatures below 55°F"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Polyscias fruticosa",
+    "common_name": "Ming Aralia",
+    "water": "Every 1–2 weeks; keep soil evenly moist",
+    "sunlight": "Bright indirect light",
+    "soil": "Well-draining potting mix",
+    "humidity": "High humidity preferred; mist regularly",
+    "placement": "Bright warm room away from drafts",
+    "health_tips": [
+      "Drops leaves when stressed — be consistent with care",
+      "Great for bonsai-style growing",
+      "Sensitive to cold; keep above 60°F"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Stromanthe thalia",
+    "common_name": "Triostar Stromanthe",
+    "water": "Every 1–2 weeks; keep evenly moist",
+    "sunlight": "Medium to bright indirect light; no direct sun",
+    "soil": "Moisture-retentive, well-draining mix",
+    "humidity": "Very high humidity (60%+); humidifier recommended",
+    "placement": "Bathrooms or rooms with consistently high humidity",
+    "health_tips": [
+      "Brown leaf edges = low humidity; use a humidifier",
+      "Stunning pink and green variegation fades in low light",
+      "Part of the prayer plant family; leaves fold at night"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Ficus benjamina",
+    "common_name": "Weeping Fig",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light; consistent conditions are key",
+    "soil": "Well-draining potting mix",
+    "humidity": "Moderate humidity",
+    "placement": "Bright room; do not move after it acclimates",
+    "health_tips": [
+      "Drops leaves when moved; pick a spot and leave it",
+      "Can be braided or trained as topiary",
+      "Toxic to pets"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Cissus discolor",
+    "common_name": "Rex Begonia Vine",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light",
+    "soil": "Well-draining potting mix",
+    "humidity": "High humidity preferred",
+    "placement": "Hanging basket or trellis in a bright humid room",
+    "health_tips": [
+      "Velvet leaves with silver and purple markings",
+      "Not a begonia — it's a grape-family vine",
+      "Great in terrariums"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Stapelia grandiflora",
+    "common_name": "Carrion Flower",
+    "water": "Every 3–4 weeks; very drought-tolerant",
+    "sunlight": "Bright indirect to direct light",
+    "soil": "Cactus mix with excellent drainage",
+    "humidity": "Low; tolerates dry air",
+    "placement": "Sunny windowsill; best in outdoor sun during summer",
+    "health_tips": [
+      "Enormous star-shaped flowers smell like rotting meat to attract flies",
+      "Bring indoors before bloom if the smell is a concern",
+      "Overwatering causes stems to rot quickly"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Lithops lesliei",
+    "common_name": "Living Stones",
+    "water": "Water only in fall and spring; completely dry in summer and winter",
+    "sunlight": "Full sun — as much as possible",
+    "soil": "Very gritty, mineral-based cactus mix; minimal organic matter",
+    "humidity": "Very low; dislikes humidity",
+    "placement": "Sunniest south-facing windowsill; supplemental grow lights help",
+    "health_tips": [
+      "Two annual watering seasons only; dead dry rest periods are essential",
+      "New leaves emerge from split center — do not water during this",
+      "Most deaths are from overwatering"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Plectranthus scutellarioides",
+    "common_name": "Coleus",
+    "water": "Every 1–2 days in summer; keep consistently moist",
+    "sunlight": "Bright indirect light; some cultivars tolerate full sun",
+    "soil": "Rich, well-draining potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Bright shaded patio in summer; sunny windowsill indoors",
+    "health_tips": [
+      "Pinch off flowers to keep foliage vibrant",
+      "Pinch growing tips to encourage bushy growth",
+      "Easy to propagate from stem cuttings in water"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Soleirolia soleirolii",
+    "common_name": "Baby's Tears",
+    "water": "Keep constantly moist; water every 2–3 days",
+    "sunlight": "Medium to bright indirect light",
+    "soil": "Moisture-retentive potting mix",
+    "humidity": "High humidity preferred",
+    "placement": "Terrariums, hanging baskets, or ground cover under taller plants",
+    "health_tips": [
+      "Wilts dramatically when dry but recovers with watering",
+      "Can become invasive outdoors in warm climates",
+      "Great filler plant in mixed planters"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Haworthia fasciata",
+    "common_name": "Pearl Plant",
+    "water": "Every 2–3 weeks; allow to dry completely",
+    "sunlight": "Bright indirect light; avoid harsh direct sun",
+    "soil": "Cactus or succulent mix",
+    "humidity": "Low; tolerates dry air",
+    "placement": "Bright windowsill with filtered light",
+    "health_tips": [
+      "Offsetting freely; pups can be separated",
+      "White bumps on leaves are the distinctive feature",
+      "Very forgiving succulent; great for beginners"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Sarracenia purpurea",
+    "common_name": "Purple Pitcher Plant",
+    "water": "Keep in standing water 1 inch deep; use only distilled or rainwater",
+    "sunlight": "Full sun — 4–6 hours direct sunlight daily",
+    "soil": "Peat moss and perlite mix; no added nutrients",
+    "humidity": "High humidity preferred",
+    "placement": "Sunny windowsill; outdoors in full sun in warmer months",
+    "health_tips": [
+      "Never use tap water or fertilizer — both are fatal",
+      "Pitchers catch insects; supplement feeding in winter",
+      "Needs cold winter dormancy (40°F) for long-term health"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Nepenthes alata",
+    "common_name": "Tropical Pitcher Plant",
+    "water": "Keep soil moist; water with distilled or rainwater",
+    "sunlight": "Bright indirect light; some morning direct sun",
+    "soil": "Peat, perlite, and orchid bark mix; no nutrients",
+    "humidity": "Very high humidity (70%+)",
+    "placement": "Hanging basket in a bright humid room or greenhouse",
+    "health_tips": [
+      "Pitchers die naturally; this is normal",
+      "Never fertilize the soil; feed pitchers insects occasionally",
+      "Thrives in highland conditions (cool nights)"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Adiantum raddianum",
+    "common_name": "Maidenhair Fern",
+    "water": "Keep consistently moist; never let dry out",
+    "sunlight": "Medium indirect light; no direct sun",
+    "soil": "Rich, moisture-retentive mix",
+    "humidity": "Very high humidity (60%+); mist daily or use humidifier",
+    "placement": "Bathrooms or enclosed humid spaces",
+    "health_tips": [
+      "Drops all fronds when stressed — cut back and it often regrows",
+      "One of the most challenging common ferns",
+      "Self-waters well in a drainage saucer system"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Platycerium bifurcatum",
+    "common_name": "Staghorn Fern",
+    "water": "Soak weekly; fully dry before the next watering",
+    "sunlight": "Bright indirect light",
+    "soil": "Mount on wood with sphagnum moss; no pot needed",
+    "humidity": "Moderate to high humidity",
+    "placement": "Mounted on wall in bright room; beautiful statement piece",
+    "health_tips": [
+      "Brown basal fronds are normal — do not remove them",
+      "Overwatering causes black spots and rot",
+      "Feed monthly with balanced fertilizer tucked under basal frond"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Cyperus alternifolius",
+    "common_name": "Umbrella Papyrus",
+    "water": "Keep standing in water — this plant loves wet conditions",
+    "sunlight": "Bright indirect to direct light",
+    "soil": "Heavy clay or moisture-retentive mix; no drainage needed",
+    "humidity": "High humidity preferred",
+    "placement": "Aquatic displays, ponds, or water-feature containers",
+    "health_tips": [
+      "One of very few houseplants that thrives in standing water",
+      "Cut old stems to ground level to tidy",
+      "Propagate by inverting a stem tip in water"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Mentha spicata",
+    "common_name": "Spearmint",
+    "water": "Every 1–2 days; keep soil consistently moist",
+    "sunlight": "Full sun to bright indirect light; 6 hours daily",
+    "soil": "Rich, moist, well-draining potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Sunny kitchen windowsill",
+    "health_tips": [
+      "Harvest regularly to prevent flowering and keep fresh",
+      "Container plants dry out quickly — check daily",
+      "Mint is very vigorous; grows best in its own pot"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Ocimum basilicum",
+    "common_name": "Basil",
+    "water": "Every 1–2 days; keep soil moist but not waterlogged",
+    "sunlight": "Full sun — 6–8 hours direct sunlight daily",
+    "soil": "Rich, well-draining potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Sunniest south-facing windowsill",
+    "health_tips": [
+      "Pinch off flower buds immediately to extend harvest life",
+      "Wilts dramatically when dry but recovers quickly",
+      "Short-lived; replace every season"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Rosmarinus officinalis",
+    "common_name": "Rosemary",
+    "water": "Every 1–2 weeks; allow soil to dry between waterings",
+    "sunlight": "Full sun — 6–8 hours direct sunlight daily",
+    "soil": "Sandy, well-draining potting mix",
+    "humidity": "Low; good airflow essential to prevent powdery mildew",
+    "placement": "Sunniest window; outdoor patio in summer",
+    "health_tips": [
+      "Powdery mildew from poor airflow — keep in sunny spot with air circulation",
+      "Woody stems are normal as plant ages",
+      "Can be trained as a topiary or bonsai"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Lavandula angustifolia",
+    "common_name": "Lavender",
+    "water": "Every 1–2 weeks; allow to dry fully between waterings",
+    "sunlight": "Full sun — minimum 6 hours direct sun daily",
+    "soil": "Sandy, alkaline, well-draining mix; add lime for pH",
+    "humidity": "Low; hates humid conditions",
+    "placement": "Sunniest south-facing window; outdoor patio in summer",
+    "health_tips": [
+      "Struggles indoors long-term without a very sunny spot",
+      "Prune after flowering to prevent woodiness",
+      "Excellent pollinator plant when placed outdoors in summer"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "species": "Dracaena sanderiana",
+    "common_name": "Lucky Bamboo",
+    "water": "Keep roots in 1–2 inches of water; change weekly",
+    "sunlight": "Low to medium indirect light",
+    "soil": "Grows in water with pebbles for support; no soil needed",
+    "humidity": "Average household humidity",
+    "placement": "Desk, shelf, or tabletop — a feng shui classic",
+    "health_tips": [
+      "Yellow stalks from fluoride — use filtered water",
+      "Not real bamboo — it's a Dracaena",
+      "Change water and clean container every 1–2 weeks"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Philodendron bipinnatifidum",
+    "common_name": "Tree Philodendron",
+    "water": "Every 1–2 weeks; allow top 2 inches to dry",
+    "sunlight": "Bright indirect light; tolerates medium light",
+    "soil": "Well-draining aroid mix",
+    "humidity": "Moderate to high humidity",
+    "placement": "Large bright rooms; makes a bold statement",
+    "health_tips": [
+      "Can reach 6+ feet wide — give it space",
+      "Yellow leaves = overwatering",
+      "Aerial roots help it climb or stabilize in large pots"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Aeonium arboreum",
+    "common_name": "Aeonium",
+    "water": "Every 2–3 weeks in winter (active season); minimal in summer",
+    "sunlight": "Full sun to bright indirect light",
+    "soil": "Cactus or succulent mix",
+    "humidity": "Low",
+    "placement": "Sunny windowsill; excellent patio plant",
+    "health_tips": [
+      "Summer dormant — goes dormant and drops leaves in heat",
+      "Winter grower — active in cooler months, unlike most succulents",
+      "Propagate from rosette cuttings"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Tradescantia fluminensis",
+    "common_name": "Inch Plant",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Medium to bright indirect light",
+    "soil": "Standard potting mix",
+    "humidity": "Average household humidity",
+    "placement": "Hanging basket or trailing over a shelf",
+    "health_tips": [
+      "Pinch leggy stems for bushier growth",
+      "Very fast grower; prune regularly",
+      "Propagates easily in water or soil"
+    ],
+    "difficulty": "easy"
+  },
+  {
+    "species": "Polypodium aureum",
+    "common_name": "Rabbit's Foot Fern",
+    "water": "Keep soil evenly moist; water when top inch is dry",
+    "sunlight": "Medium to bright indirect light",
+    "soil": "Well-draining, moisture-retentive mix",
+    "humidity": "High humidity preferred",
+    "placement": "Hanging basket to display fuzzy surface rhizomes",
+    "health_tips": [
+      "Furry brown rhizomes growing over pot rim are normal and charming",
+      "Do not bury the rhizomes — leave them exposed",
+      "Mist rhizomes as well as leaves"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Vriesea splendens",
+    "common_name": "Flaming Sword Bromeliad",
+    "water": "Fill central cup; mist leaves; water soil lightly every 2 weeks",
+    "sunlight": "Bright indirect light",
+    "soil": "Bromeliad or orchid mix",
+    "humidity": "High humidity preferred",
+    "placement": "Bright tropical display; bathroom or sunroom",
+    "health_tips": [
+      "Dramatic red sword-shaped flower spike lasts months",
+      "Parent dies after blooming but produces pups",
+      "Change cup water monthly"
+    ],
+    "difficulty": "moderate"
+  },
+  {
+    "species": "Alocasia zebrina",
+    "common_name": "Zebra Alocasia",
+    "water": "Every 1–2 weeks; allow top inch to dry",
+    "sunlight": "Bright indirect light",
+    "soil": "Chunky aroid mix with perlite",
+    "humidity": "High humidity (60%+)",
+    "placement": "Warm bright room away from drafts",
+    "health_tips": [
+      "Dramatic zebra-patterned petioles are the main attraction",
+      "Goes dormant in winter — reduce watering",
+      "Toxic to pets"
+    ],
+    "difficulty": "moderate"
+  }
+]

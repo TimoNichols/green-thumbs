@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Green Thumbs — Mobile App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #EDE9DC; color: #1F3A28;
+    font-family: 'Manrope', -apple-system, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  * { box-sizing: border-box; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "cameraSymptom": "None",
+  "confidence": 88,
+  "startScreen": "home"
+}/*EDITMODE-END*/;
+
+function PaletteCard() {
+  const groups = [
+    { name: 'Surfaces', swatches: [
+      { name: 'bg / cream',     hex: '#F4F1E8', use: 'app background' },
+      { name: 'bg / sage tint', hex: '#E5EBDB', use: 'soft sections' },
+      { name: 'bg / mint tint', hex: '#DCE7C7', use: 'positive accents' },
+      { name: 'bg / raise',     hex: '#FFFFFF', use: 'cards' },
+      { name: 'bg / deep',      hex: '#0E1A12', use: 'viewfinder only' },
+    ]},
+    { name: 'Greens', swatches: [
+      { name: 'forest', hex: '#1F3A28', use: 'primary text' },
+      { name: 'pine',   hex: '#2E5238', use: 'secondary, badges' },
+      { name: 'leaf',   hex: '#5C8A5C', use: 'CTA, links' },
+      { name: 'sage',   hex: '#8FA988', use: 'soft borders' },
+      { name: 'mint',   hex: '#B8D5A6', use: 'highlights' },
+    ]},
+    { name: 'Amber (diagnosis only)', swatches: [
+      { name: 'amber',      hex: '#B8842E', use: 'icon, accent' },
+      { name: 'amber deep', hex: '#7A5418', use: 'text on amber' },
+      { name: 'amber soft', hex: '#F5E6C8', use: 'card bg' },
+      { name: 'amber line', hex: '#D9B074', use: 'card border' },
+    ]},
+  ];
+  return (
+    <div style={{ width: 1100, padding: 32, background:'#FFFFFF', border:'1px solid rgba(45,70,50,0.10)', borderRadius: 18, color:'#1F3A28' }}>
+      <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 11, color:'#6B7A6B', letterSpacing: 1.4, textTransform:'uppercase' }}>
+        Theme · drop into theme.js
+      </div>
+      <div style={{ fontFamily:'Fraunces', fontStyle:'italic', fontSize: 32, fontWeight: 400, marginTop: 6, letterSpacing: -0.3 }}>
+        Color & type
+      </div>
+
+      {groups.map(g => (
+        <div key={g.name} style={{ marginTop: 22 }}>
+          <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 10, color:'#6B7A6B', letterSpacing: 1.2, textTransform:'uppercase', marginBottom: 10 }}>
+            {g.name}
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap: 10 }}>
+            {g.swatches.map(s => (
+              <div key={s.hex} style={{ padding: 12, background:'#F4F1E8', border:'1px solid rgba(45,70,50,0.08)', borderRadius: 12 }}>
+                <div style={{ width:'100%', height: 60, borderRadius: 10, background: s.hex, border:'1px solid rgba(0,0,0,0.05)' }}/>
+                <div style={{ fontFamily:'Fraunces', fontStyle:'italic', fontSize: 14, color:'#1F3A28', marginTop: 10 }}>{s.name}</div>
+                <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 10.5, color:'#6B7A6B', marginTop: 3, letterSpacing: 0.6 }}>
+                  {s.hex.toUpperCase()}
+                </div>
+                <div style={{ fontFamily:'Manrope', fontSize: 10.5, color:'#4A5A4A', marginTop: 2 }}>{s.use}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div style={{ marginTop: 28, display:'grid', gridTemplateColumns:'1fr 1fr', gap: 14 }}>
+        <div style={{ padding: 18, background:'#F4F1E8', border:'1px solid rgba(45,70,50,0.08)', borderRadius: 12 }}>
+          <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 10, color:'#6B7A6B', letterSpacing: 1.4, textTransform:'uppercase' }}>
+            Display · Fraunces
+          </div>
+          <div style={{ fontFamily:'Fraunces', fontWeight: 400, fontSize: 44, lineHeight: 1.05, marginTop: 8, letterSpacing: -0.5, color:'#1F3A28' }}>
+            Know what your <em style={{ color:'#5C8A5C' }}>plant</em> needs.
+          </div>
+        </div>
+        <div style={{ padding: 18, background:'#F4F1E8', border:'1px solid rgba(45,70,50,0.08)', borderRadius: 12 }}>
+          <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 10, color:'#6B7A6B', letterSpacing: 1.4, textTransform:'uppercase' }}>
+            UI · Manrope
+          </div>
+          <div style={{ fontFamily:'Manrope', fontWeight: 600, fontSize: 16, marginTop: 12, lineHeight: 1.5, color:'#1F3A28' }}>
+            One photo. Species, care, and a calm diagnosis when something's off.
+          </div>
+          <div style={{ fontFamily:'Manrope', fontWeight: 400, fontSize: 13.5, color:'#4A5A4A', marginTop: 10, lineHeight: 1.5 }}>
+            Body 13–15px · 400/500/600/700. Mono labels at 10–11px, uppercase.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ArchNote() {
+  const cols = [
+    { tab:'Home',   role:'Daily glance', detail:'Hero CTA, this-week stats, next reminder, recent scans' },
+    { tab:'Plants', role:'History hub',  detail:'All scans, filterable. Tap → that plant\u2019s report. Swipe → delete.' },
+    { tab:'Scan',   role:'Capture',      detail:'Raised CTA. Camera → Analyzing → Report flow.' },
+    { tab:'Garden', role:'Care plan',    detail:'Week strip + per-plant tasks (water, mist, rotate, repot).' },
+    { tab:'You',    role:'Account',      detail:'Profile, garden stats, achievements, settings list.' },
+  ];
+  return (
+    <div style={{ width: 1100, padding: 32, background:'#FFFFFF', border:'1px solid rgba(45,70,50,0.10)', borderRadius: 18, color:'#1F3A28' }}>
+      <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 11, color:'#6B7A6B', letterSpacing: 1.4, textTransform:'uppercase' }}>
+        Information architecture
+      </div>
+      <div style={{ fontFamily:'Fraunces', fontStyle:'italic', fontSize: 32, fontWeight: 400, marginTop: 6, letterSpacing: -0.3 }}>
+        Why these 5 tabs
+      </div>
+      <div style={{ marginTop: 18, display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap: 12 }}>
+        {cols.map(c => (
+          <div key={c.tab} style={{ padding: 16, background:'#F4F1E8', border:'1px solid rgba(45,70,50,0.08)', borderRadius: 12 }}>
+            <div style={{ fontFamily:'Fraunces', fontStyle:'italic', fontSize: 22, color:'#1F3A28' }}>{c.tab}</div>
+            <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 9.5, color:'#5C8A5C', marginTop: 4, letterSpacing: 0.8, textTransform:'uppercase' }}>{c.role}</div>
+            <div style={{ fontFamily:'Manrope', fontSize: 12.5, color:'#4A5A4A', marginTop: 10, lineHeight: 1.45 }}>{c.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ComponentCallouts() {
+  const items = [
+    { title:'Tab bar — 5 destinations',  desc:'Home, Plants, Scan (raised), Garden, You. Every tab is a real screen.', tag:'<TabBar active onTab />' },
+    { title:'Symptom chip row',          desc:'Selected before shooting. None → mint, symptom → amber. Context flows into AI.', tag:'<SymptomChip selected onSelect />' },
+    { title:'Care grid (2×2)',           desc:'Icon top-left, mono label top-right, serif value, sans hint. 10px gap.', tag:'<CareGrid water light soil humidity />' },
+    { title:'Diagnosis card',            desc:'Renders only if symptoms passed. Amber gradient bg, "reasoning" badge. Visually quarantined from care grid.', tag:'<DiagnosisCard symptoms={...} />' },
+    { title:'History row',               desc:'Swipe-left reveals delete. Symptom → amber pill, healthy → mint pill.', tag:'<HistoryRow plant onTap onSwipeDelete />' },
+    { title:'Care task row',             desc:'Garden screen. Mint or amber icon tile. Italic plant name, mono date label, circular check.', tag:'<CareTask task plant when due />' },
+  ];
+  return (
+    <div style={{ width: 1100, padding: 32, background:'#FFFFFF', border:'1px solid rgba(45,70,50,0.10)', borderRadius: 18, color:'#1F3A28' }}>
+      <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 11, color:'#6B7A6B', letterSpacing: 1.4, textTransform:'uppercase' }}>
+        Components · build these in React Native
+      </div>
+      <div style={{ fontFamily:'Fraunces', fontStyle:'italic', fontSize: 32, fontWeight: 400, marginTop: 6, letterSpacing: -0.3 }}>
+        Pattern library
+      </div>
+      <div style={{ marginTop: 24, display:'grid', gridTemplateColumns:'1fr 1fr', gap: 12 }}>
+        {items.map(it => (
+          <div key={it.title} style={{ padding: 18, background:'#F4F1E8', border:'1px solid rgba(45,70,50,0.08)', borderRadius: 12 }}>
+            <div style={{ fontFamily:'Fraunces', fontStyle:'italic', fontSize: 18, color:'#1F3A28' }}>{it.title}</div>
+            <div style={{ fontFamily:'Manrope', fontSize: 13, color:'#4A5A4A', marginTop: 6, lineHeight: 1.5 }}>{it.desc}</div>
+            <div style={{ fontFamily:'"JetBrains Mono", monospace', fontSize: 11, color:'#2E5238', marginTop: 12, padding: '6px 10px', background:'rgba(184,213,166,0.4)', border:'1px solid rgba(92,138,92,0.3)', borderRadius: 6, display:'inline-block' }}>{it.tag}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [tw, setTwState] = window.useTweaks(TWEAK_DEFAULTS);
+  const setTw = (k, v) => setTwState({ [k]: v });
+
+  return (
+    <>
+      <window.DesignCanvas>
+        <window.DCSection id="screens" title="Green Thumbs" subtitle="A mobile field guide · interactive screens">
+          <window.DCArtboard id="home"      label="01 · Home"      width={420} height={870}>
+            <window.GreenThumbsApp tw={{...tw, startScreen: 'home'}} setTw={setTw}/>
+          </window.DCArtboard>
+          <window.DCArtboard id="camera"    label="02 · Camera"    width={420} height={870}>
+            <window.GreenThumbsApp tw={{...tw, startScreen: 'camera'}} setTw={setTw}/>
+          </window.DCArtboard>
+          <window.DCArtboard id="analyzing" label="03 · Analyzing" width={420} height={870}>
+            <window.GreenThumbsApp tw={{...tw, startScreen: 'analyzing'}} setTw={setTw}/>
+          </window.DCArtboard>
+          <window.DCArtboard id="report"    label="04 · Report"    width={420} height={870}>
+            <window.GreenThumbsApp tw={{...tw, startScreen: 'report'}} setTw={setTw}/>
+          </window.DCArtboard>
+          <window.DCArtboard id="plants"    label="05 · My Plants" width={420} height={870}>
+            <window.GreenThumbsApp tw={{...tw, startScreen: 'plants'}} setTw={setTw}/>
+          </window.DCArtboard>
+          <window.DCArtboard id="garden"    label="06 · Garden"    width={420} height={870}>
+            <window.GreenThumbsApp tw={{...tw, startScreen: 'garden'}} setTw={setTw}/>
+          </window.DCArtboard>
+          <window.DCArtboard id="profile"   label="07 · You"       width={420} height={870}>
+            <window.GreenThumbsApp tw={{...tw, startScreen: 'profile'}} setTw={setTw}/>
+          </window.DCArtboard>
+        </window.DCSection>
+
+        <window.DCSection id="system" title="Design system" subtitle="Tokens, type, components for handoff">
+          <window.DCArtboard id="ia"         label="Tab structure"    width={1180} height={420}>
+            <div style={{ padding: 40, background:'#EDE9DC', height:'100%' }}><ArchNote /></div>
+          </window.DCArtboard>
+          <window.DCArtboard id="palette"    label="Theme tokens"     width={1180} height={1100}>
+            <div style={{ padding: 40, background:'#EDE9DC', height:'100%' }}><PaletteCard /></div>
+          </window.DCArtboard>
+          <window.DCArtboard id="components" label="Pattern callouts" width={1180} height={780}>
+            <div style={{ padding: 40, background:'#EDE9DC', height:'100%' }}><ComponentCallouts /></div>
+          </window.DCArtboard>
+        </window.DCSection>
+
+        <window.DCSection id="prototype" title="Live prototype" subtitle="Tap through every screen">
+          <window.DCArtboard id="live" label="Interactive" width={420} height={870}>
+            <window.GreenThumbsApp tw={tw} setTw={setTw}/>
+          </window.DCArtboard>
+        </window.DCSection>
+      </window.DesignCanvas>
+
+      <window.TweaksPanel title="Tweaks">
+        <window.TweakSection title="State">
+          <window.TweakSelect label="Start screen" value={tw.startScreen}
+            onChange={(v) => setTw('startScreen', v)}
+            options={[
+              { value: 'home',      label: 'Home' },
+              { value: 'camera',    label: 'Camera' },
+              { value: 'analyzing', label: 'Analyzing' },
+              { value: 'report',    label: 'Report' },
+              { value: 'plants',    label: 'My Plants' },
+              { value: 'garden',    label: 'Garden' },
+              { value: 'profile',   label: 'You' },
+            ]} />
+          <window.TweakRadio label="Symptom flag" value={tw.cameraSymptom}
+            onChange={(v) => setTw('cameraSymptom', v)}
+            options={[
+              { value: 'None',          label: 'None' },
+              { value: 'Yellow edges',  label: 'Yellow' },
+              { value: 'Brown tips',    label: 'Brown' },
+              { value: 'Drooping',      label: 'Droop' },
+              { value: 'Spots',         label: 'Spots' },
+            ]}/>
+          <window.TweakSlider label="Confidence %" value={tw.confidence}
+            min={70} max={99} step={1}
+            onChange={(v) => setTw('confidence', v)} />
+        </window.TweakSection>
+      </window.TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
