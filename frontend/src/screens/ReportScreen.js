@@ -19,6 +19,7 @@ import * as FileSystem from 'expo-file-system';
 import { colors, fonts, radii } from '../utils/theme';
 import * as Ico from '../components/Ico';
 import { addToHistory, updateHistory, getHistory } from '../utils/history';
+import { fetchDiagnosis } from '../utils/api';
 
 const SCREEN_W = Dimensions.get('window').width;
 const HERO_H = 260;
@@ -65,9 +66,15 @@ const SYMPTOM_INFO = {
   },
 };
 
+const SYMPTOM_CHIPS = ['Yellow edges', 'Brown tips', 'Drooping', 'Spots'];
+
 function getDiagnosis(report) {
-  const { symptom, symptom_source, auto_symptom_detail } = report ?? {};
+  const { symptom, symptom_source, auto_symptom_detail, text_diagnosis } = report ?? {};
   if (!symptom || symptom === 'None') return null;
+
+  if (text_diagnosis) {
+    return { headerLabel: 'DIAGNOSIS', title: text_diagnosis.title, body: text_diagnosis.body };
+  }
 
   if (symptom_source === 'auto' && auto_symptom_detail?.summary) {
     const detected = auto_symptom_detail.symptoms?.join(', ') || symptom;
@@ -133,6 +140,9 @@ export default function ReportScreen({ navigation, route }) {
 
   const [currentReport, setCurrentReport] = useState(initialReport ?? null);
   const [currentPhotoUri, setCurrentPhotoUri] = useState(initialReport?.photoUri ?? null);
+  const [showSymptomPicker, setShowSymptomPicker] = useState(false);
+  const [pickedSymptom, setPickedSymptom] = useState(null);
+  const [diagnosing, setDiagnosing] = useState(false);
 
   // When returning from a scan of a manual plant, re-fetch to pick up merged care data
   useFocusEffect(
@@ -197,6 +207,33 @@ export default function ReportScreen({ navigation, route }) {
     setCurrentPhotoUri(permanentUri);
     if (report.id) {
       await updateHistory(report.id, { photoUri: permanentUri });
+    }
+  }
+
+  async function handleTextDiagnosis() {
+    if (!pickedSymptom) return;
+    const speciesName = report.species || report.common_name;
+    if (!speciesName) return;
+    setDiagnosing(true);
+    try {
+      const result = await fetchDiagnosis(speciesName, pickedSymptom);
+      const patch = {
+        symptom: pickedSymptom,
+        symptom_source: 'user',
+        text_diagnosis: { title: result.title, body: result.body },
+      };
+      if (currentReport.id) {
+        const updated = await updateHistory(currentReport.id, patch);
+        setCurrentReport(updated ?? { ...currentReport, ...patch });
+      } else {
+        setCurrentReport(prev => ({ ...prev, ...patch }));
+      }
+      setShowSymptomPicker(false);
+      setPickedSymptom(null);
+    } catch (e) {
+      Alert.alert('Diagnosis failed', e.message || 'Something went wrong. Please try again.');
+    } finally {
+      setDiagnosing(false);
     }
   }
 
@@ -328,8 +365,8 @@ export default function ReportScreen({ navigation, route }) {
           </View>
         </View>
 
-        {/* ── Scan banner — manual plants only ───────────────────── */}
-        {isManual && (
+        {/* ── Scan banner — manual plants without care data ────────── */}
+        {isManual && !report.water && (
           <View style={styles.scanBanner}>
             <View style={styles.scanBannerLeft}>
               <View style={styles.scanBannerIconWrap}>
@@ -346,6 +383,81 @@ export default function ReportScreen({ navigation, route }) {
               <Ico.Scan color="#FBFAF3" size={14} />
               <Text style={styles.scanBannerBtnText}>Scan now</Text>
             </Pressable>
+          </View>
+        )}
+
+        {/* ── Something wrong? — manual plants ──────────────────── */}
+        {isManual && (
+          <View style={styles.symptomPickerWrap}>
+            {!showSymptomPicker ? (
+              <Pressable
+                onPress={() => setShowSymptomPicker(true)}
+                style={({ pressed }) => [styles.somethingWrongBtn, pressed && { opacity: 0.8 }]}
+              >
+                <Ico.Alert color={colors.amber} size={15} />
+                <Text style={styles.somethingWrongText}>Something wrong?</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.symptomPickerCard}>
+                <View style={styles.symptomPickerTop}>
+                  <Text style={styles.symptomPickerTitle}>What looks off?</Text>
+                  <Pressable
+                    onPress={() => { setShowSymptomPicker(false); setPickedSymptom(null); }}
+                    style={({ pressed }) => [styles.symptomPickerCloseBtn, pressed && { opacity: 0.7 }]}
+                  >
+                    <Text style={styles.symptomPickerCloseText}>✕</Text>
+                  </Pressable>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.symptomChipRow}
+                >
+                  {SYMPTOM_CHIPS.map((s) => {
+                    const active = pickedSymptom === s;
+                    return (
+                      <Pressable
+                        key={s}
+                        onPress={() => setPickedSymptom(active ? null : s)}
+                        style={[styles.symptomChip, active && styles.symptomChipActive]}
+                      >
+                        {active && <View style={styles.symptomChipDot} />}
+                        <Text style={[styles.symptomChipText, active && styles.symptomChipTextActive]}>
+                          {s}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                {pickedSymptom && (
+                  <View style={styles.symptomActions}>
+                    <Pressable
+                      onPress={() => {
+                        setShowSymptomPicker(false);
+                        navigation.navigate('Camera', { linkedPlantId: report.id, initialSymptom: pickedSymptom });
+                      }}
+                      style={({ pressed }) => [styles.symptomScanBtn, pressed && { opacity: 0.85 }]}
+                    >
+                      <Ico.Scan color="#FBFAF3" size={14} />
+                      <Text style={styles.symptomScanBtnText}>Scan to diagnose</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={handleTextDiagnosis}
+                      disabled={diagnosing}
+                      style={({ pressed }) => [
+                        styles.symptomTextBtn,
+                        pressed && { opacity: 0.85 },
+                        diagnosing && { opacity: 0.6 },
+                      ]}
+                    >
+                      <Text style={styles.symptomTextBtnText}>
+                        {diagnosing ? 'Diagnosing…' : 'Quick diagnosis'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         )}
 
@@ -377,8 +489,8 @@ export default function ReportScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* ── Care guide — hidden for manual entries (no data yet) ── */}
-        {!isManual && (
+        {/* ── Care guide — shown when data is present ─────────────── */}
+        {!!report.water && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Care guide</Text>
             <View style={styles.careGrid}>
@@ -401,8 +513,8 @@ export default function ReportScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* ── Health tips — hidden for manual entries ─────────────── */}
-        {!isManual && report.health_tips?.length > 0 && (
+        {/* ── Health tips ──────────────────────────────────────────── */}
+        {!!report.water && report.health_tips?.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.tipsSectionHeader}>
               <Text style={styles.tipsSectionHeaderItalic}>Health</Text>
@@ -910,5 +1022,129 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     letterSpacing: 0.2,
+  },
+
+  // ── Something wrong? / symptom picker
+  symptomPickerWrap: {
+    marginBottom: 22,
+  },
+  somethingWrongBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: radii.pill,
+    backgroundColor: colors.amberSoft,
+    borderWidth: 1,
+    borderColor: colors.amberLine,
+  },
+  somethingWrongText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 13,
+    color: colors.amberDeep,
+  },
+  symptomPickerCard: {
+    backgroundColor: colors.amberSoft,
+    borderWidth: 1,
+    borderColor: colors.amberLine,
+    borderRadius: radii['2xl'],
+    padding: 16,
+    overflow: 'hidden',
+  },
+  symptomPickerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  symptomPickerTitle: {
+    fontFamily: fonts.sansBold,
+    fontSize: 14,
+    color: colors.amberDeep,
+  },
+  symptomPickerCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(184,132,46,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  symptomPickerCloseText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 12,
+    color: colors.amberDeep,
+  },
+  symptomChipRow: {
+    gap: 8,
+    paddingBottom: 2,
+  },
+  symptomChip: {
+    flexShrink: 0,
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(184,132,46,0.08)',
+    borderWidth: 1,
+    borderColor: colors.amberLine,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  symptomChipActive: {
+    backgroundColor: 'rgba(184,132,46,0.22)',
+    borderColor: colors.amber,
+  },
+  symptomChipDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.amber,
+  },
+  symptomChipText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 13,
+    color: colors.amberDeep,
+    opacity: 0.7,
+  },
+  symptomChipTextActive: {
+    opacity: 1,
+  },
+  symptomActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+  symptomScanBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 44,
+    borderRadius: radii.lg,
+    backgroundColor: colors.pine,
+  },
+  symptomScanBtnText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 13,
+    color: '#FBFAF3',
+  },
+  symptomTextBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: radii.lg,
+    backgroundColor: 'rgba(184,132,46,0.12)',
+    borderWidth: 1,
+    borderColor: colors.amberLine,
+  },
+  symptomTextBtnText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 13,
+    color: colors.amberDeep,
   },
 });

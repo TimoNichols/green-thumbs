@@ -5,7 +5,9 @@
       "Bash(Select-String *)",
       "Bash(npx expo *)",
       "Bash(Test-Path *)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\" | Select-Object Name, @{N=\"Type\";E={if\\($_.PSIsContainer\\){\"Folder\"}else{\"File\"}}})",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\\\\frontend\" -Directory | Where-Object { $_.Name -ne \"node_modules\" } | ForEach-Object { $_.Name })"
     ]
   }
 }

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,12 +20,13 @@ import * as Ico from '../components/Ico';
 const SYMPTOMS = ['None', 'Yellow edges', 'Brown tips', 'Drooping', 'Spots'];
 
 export default function CameraScreen({ navigation, route }) {
-  const { linkedPlantId } = route.params ?? {};
+  const { linkedPlantId, initialSymptom } = route.params ?? {};
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState('back');
   const [flash, setFlash] = useState('off');
-  const [symptom, setSymptom] = useState('None');
+  const [symptom, setSymptom] = useState(initialSymptom || 'None');
+  const [knownSpecies, setKnownSpecies] = useState('');
   const [taking, setTaking] = useState(false);
   const cameraRef = useRef(null);
 
@@ -53,6 +55,7 @@ export default function CameraScreen({ navigation, route }) {
         photoUri: photo.uri,
         mediaType: 'image/jpeg',
         symptom,
+        knownSpecies: knownSpecies.trim() || undefined,
         linkedPlantId,
       });
     } catch {
@@ -73,6 +76,7 @@ export default function CameraScreen({ navigation, route }) {
         photoUri: asset.uri,
         mediaType,
         symptom,
+        knownSpecies: knownSpecies.trim() || undefined,
         linkedPlantId,
       });
     }
@@ -171,6 +175,17 @@ export default function CameraScreen({ navigation, route }) {
             })}
           </ScrollView>
         </View>
+
+        {/* Optional species input */}
+        <TextInput
+          style={styles.speciesInput}
+          value={knownSpecies}
+          onChangeText={setKnownSpecies}
+          placeholder="Know the species? Skip ID (optional)"
+          placeholderTextColor="rgba(244,241,232,0.4)"
+          autoCorrect={false}
+          returnKeyType="done"
+        />
 
         {/* Shutter row */}
         <View style={styles.shutterRow}>
@@ -393,6 +408,21 @@ const styles = StyleSheet.create({
   },
   chipTextSymptom: {
     color: '#F0CC85',
+  },
+
+  // Species input
+  speciesInput: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: 14,
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: '#F4F1E8',
   },
 
   // Shutter row

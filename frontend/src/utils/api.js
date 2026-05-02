@@ -7,6 +7,7 @@ export async function analyzeImage(
   photoUri,
   mediaType = "image/jpeg",
   symptom = "None",
+  knownSpecies = "",
 ) {
   const formData = new FormData();
   formData.append("file", {
@@ -15,6 +16,9 @@ export async function analyzeImage(
     name: "plant.jpg",
   });
   formData.append("symptom", symptom || "None");
+  if (knownSpecies) {
+    formData.append("known_species", knownSpecies);
+  }
 
   const response = await fetch(`${API_BASE_URL}/analyze`, {
     method: "POST",
@@ -26,5 +30,34 @@ export async function analyzeImage(
     throw new Error(error.detail || `Server error ${response.status}`);
   }
 
+  return response.json();
+}
+
+export async function fetchCare(species) {
+  const formData = new FormData();
+  formData.append("species", species);
+  const response = await fetch(`${API_BASE_URL}/care`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `Server error ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchDiagnosis(species, symptom) {
+  const formData = new FormData();
+  formData.append("species", species);
+  formData.append("symptom", symptom);
+  const response = await fetch(`${API_BASE_URL}/diagnose`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `Server error ${response.status}`);
+  }
   return response.json();
 }

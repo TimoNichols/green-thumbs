@@ -25,19 +25,20 @@ const STEPS = [
 ];
 
 export default function AnalyzingScreen({ navigation, route }) {
-  const { photoUri, mediaType = 'image/jpeg', symptom = 'None', linkedPlantId } = route.params ?? {};
+  const { photoUri, mediaType = 'image/jpeg', symptom = 'None', linkedPlantId, knownSpecies = '' } = route.params ?? {};
   const insets = useSafeAreaInsets();
 
-  const [step, setStep] = useState(0);
+  const initialStep = knownSpecies ? 1 : 0;
+  const [step, setStep] = useState(initialStep);
   const [report, setReport] = useState(null);
 
   // Per-row opacity (idle = 0.35, active/done = 1)
   const rowOpacities = useRef(
-    STEPS.map((_, i) => new Animated.Value(i === 0 ? 1 : 0.35))
+    STEPS.map((_, i) => new Animated.Value(i <= initialStep ? 1 : 0.35))
   ).current;
 
   const spinAnim = useRef(new Animated.Value(0)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(initialStep / STEPS.length)).current;
   const scanAnim = useRef(new Animated.Value(0)).current;
 
   // ── Spinner loop
@@ -100,7 +101,7 @@ export default function AnalyzingScreen({ navigation, route }) {
 
   // ── API call — fires once on mount
   useEffect(() => {
-    analyzeImage(photoUri, mediaType, symptom)
+    analyzeImage(photoUri, mediaType, symptom, knownSpecies)
       .then(async (data) => {
         // Copy temp photo to a permanent path so it survives cache clears.
         // Fall back to the temp URI if the copy fails (e.g. simulator quirks).

@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from analyzer import analyze_plant
+from analyzer import analyze_plant, get_care_for_species, diagnose_text
 
 load_dotenv()
 
@@ -28,6 +28,7 @@ def health_check():
 async def analyze(
     file: UploadFile = File(...),
     symptom: str = Form(default="None"),
+    known_species: str = Form(default=""),
 ):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
@@ -44,5 +45,23 @@ async def analyze(
         )
 
     user_symptom = None if symptom in ("None", "", "none") else symptom
-    result = await analyze_plant(image_bytes, file.content_type, user_symptom)
+    known = known_species.strip() or None
+    result = await analyze_plant(image_bytes, file.content_type, user_symptom, known)
     return result
+
+
+@app.post("/care")
+async def care(species: str = Form(...)):
+    if not species.strip():
+        raise HTTPException(status_code=400, detail="species is required")
+    return await get_care_for_species(species.strip())
+
+
+@app.post("/diagnose")
+async def diagnose(
+    species: str = Form(...),
+    symptom: str = Form(...),
+):
+    if not species.strip() or not symptom.strip():
+        raise HTTPException(status_code=400, detail="species and symptom are required")
+    return await diagnose_text(species.strip(), symptom.strip())

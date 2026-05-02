@@ -127,12 +127,55 @@ async def _care_from_claude(species: str) -> dict:
         raise ValueError(f"Could not parse care data for {species}")
 
 
+async def get_care_for_species(species: str) -> dict:
+    """Return care data for a named species without an image."""
+    cached = _care_from_cache(species)
+    if cached:
+        return {**cached, "source": "cache"}
+    care = await _care_from_claude(species)
+    return {**care, "source": "claude"}
+
+
+async def diagnose_text(species: str, symptom: str) -> dict:
+    """Return a text-only Claude diagnosis for a species + symptom."""
+    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
+    msg = await client.messages.create(
+        model=CLAUDE_MODEL,
+        max_tokens=300,
+        messages=[{
+            "role": "user",
+            "content": (
+                f"A {species} is showing: {symptom}. "
+                "Give a short, actionable plant health diagnosis. "
+                "Respond with valid JSON only (no extra text):\n"
+                '{"title": "short cause title (e.g. Likely overwatered)", '
+                '"body": "2-3 sentences explaining the likely cause and specific remedy"}'
+            ),
+        }],
+    )
+    text = msg.content[0].text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+    return {"title": "Issue detected", "body": text[:300]}
+
+
 async def analyze_plant(
     image_bytes: bytes,
     media_type: str,
     user_symptom: str | None,
+    known_species: str | None = None,
 ) -> dict:
-    species, confidence = await identify_species(image_bytes)
+    if known_species:
+        species, confidence = known_species, 1.0
+    else:
+        species, confidence = await identify_species(image_bytes)
 
     vision_task = asyncio.create_task(detect_symptoms(image_bytes, media_type))
 

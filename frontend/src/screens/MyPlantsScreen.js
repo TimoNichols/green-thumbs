@@ -10,6 +10,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +27,7 @@ import Animated, {
 import { colors, fonts, radii } from '../utils/theme';
 import { getHistory, deleteFromHistory, addToHistory } from '../utils/history';
 import { getWishlist, addToWishlist, deleteFromWishlist } from '../utils/wishlist';
+import { fetchCare } from '../utils/api';
 import { PlantPlaceholder } from './HomeScreen';
 import * as Ico from '../components/Ico';
 
@@ -190,20 +192,50 @@ function AddManuallySheet({ visible, tab, onClose, onSave }) {
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
   const [destination, setDestination] = useState(tab);
+  const [carePreview, setCarePreview] = useState(null);
+  const [careLoading, setCareLoading] = useState(false);
 
-  // Re-default to whichever tab is active each time the sheet opens
   useEffect(() => {
-    if (visible) setDestination(tab);
+    if (visible) {
+      setDestination(tab);
+    } else {
+      setCarePreview(null);
+      setCareLoading(false);
+    }
   }, [visible, tab]);
+
+  async function handleGetCare() {
+    const s = species.trim();
+    if (!s) return;
+    setCareLoading(true);
+    setCarePreview(null);
+    try {
+      const data = await fetchCare(s);
+      setCarePreview(data);
+      if (data.common_name && !name.trim()) setName(data.common_name);
+    } catch (e) {
+      Alert.alert('Could not fetch care data', e.message || 'Check your connection and try again.');
+    } finally {
+      setCareLoading(false);
+    }
+  }
 
   function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    onSave({ common_name: trimmed, species: species.trim() || null }, destination);
+    const plantData = { common_name: trimmed, species: species.trim() || null };
+    if (carePreview) {
+      const { source: _src, ...care } = carePreview;
+      Object.assign(plantData, care);
+    }
+    onSave(plantData, destination);
     setName('');
     setSpecies('');
+    setCarePreview(null);
     onClose();
   }
+
+  const careReady = !!species.trim() && !careLoading;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -246,16 +278,76 @@ function AddManuallySheet({ visible, tab, onClose, onSave }) {
             returnKeyType="next"
             autoCapitalize="words"
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Latin name (optional)"
-            placeholderTextColor={colors.textMute}
-            value={species}
-            onChangeText={setSpecies}
-            returnKeyType="done"
-            onSubmitEditing={handleSave}
-            autoCapitalize="words"
-          />
+
+          {/* Species row + Get care details button */}
+          <View style={styles.speciesRow}>
+            <TextInput
+              style={[styles.input, styles.speciesInput]}
+              placeholder="Latin name e.g. Monstera deliciosa"
+              placeholderTextColor={colors.textMute}
+              value={species}
+              onChangeText={(t) => { setSpecies(t); if (carePreview) setCarePreview(null); }}
+              returnKeyType="done"
+              onSubmitEditing={handleSave}
+              autoCapitalize="words"
+            />
+            <Pressable
+              onPress={handleGetCare}
+              disabled={!careReady}
+              style={({ pressed }) => [
+                styles.getCareBtn,
+                !careReady && styles.getCareBtnDisabled,
+                pressed && { opacity: 0.75 },
+              ]}
+            >
+              <Ico.Leaf color={careReady ? colors.pine : colors.textMute} size={14} />
+              <Text style={[styles.getCareBtnText, !careReady && styles.getCareBtnTextDisabled]}>
+                {careLoading ? 'Loading…' : 'Get care'}
+              </Text>
+            </Pressable>
+          </View>
+          <Text style={styles.speciesHint}>Use the scientific name for accurate care details</Text>
+
+          {/* Care preview card */}
+          {carePreview && (
+            <View style={styles.carePreview}>
+              <View style={styles.carePreviewTop}>
+                <Text style={styles.carePreviewName} numberOfLines={1}>
+                  {carePreview.common_name || species}
+                </Text>
+                {carePreview.difficulty && (
+                  <View style={[
+                    styles.carePreviewDiff,
+                    carePreview.difficulty === 'easy' ? styles.diffEasy :
+                    carePreview.difficulty === 'hard' ? styles.diffHard : styles.diffMed,
+                  ]}>
+                    <Text style={[
+                      styles.carePreviewDiffText,
+                      carePreview.difficulty === 'easy' ? { color: colors.pine } :
+                      carePreview.difficulty === 'hard' ? { color: '#fff' } :
+                      { color: colors.amberDeep },
+                    ]}>
+                      {carePreview.difficulty.charAt(0).toUpperCase() + carePreview.difficulty.slice(1)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.carePreviewDetails}>
+                {carePreview.water && (
+                  <View style={styles.carePreviewItem}>
+                    <Ico.Drop color={colors.pine} size={12} />
+                    <Text style={styles.carePreviewItemText} numberOfLines={1}>{carePreview.water}</Text>
+                  </View>
+                )}
+                {carePreview.sunlight && (
+                  <View style={styles.carePreviewItem}>
+                    <Ico.Sun color={colors.amber} size={12} />
+                    <Text style={styles.carePreviewItemText} numberOfLines={1}>{carePreview.sunlight}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
 
           <Pressable
             onPress={handleSave}
@@ -756,5 +848,102 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#fff',
     letterSpacing: 0.2,
+  },
+
+  // ── Species row + Get care button
+  speciesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  speciesInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  getCareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    height: 48,
+    paddingHorizontal: 12,
+    borderRadius: radii.lg,
+    backgroundColor: colors.bgMint,
+    borderWidth: 1,
+    borderColor: 'rgba(92,138,92,0.35)',
+    flexShrink: 0,
+  },
+  getCareBtnDisabled: {
+    backgroundColor: colors.bgAlt,
+    borderColor: colors.lineSoft,
+    opacity: 0.55,
+  },
+  getCareBtnText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 12,
+    color: colors.pine,
+  },
+  getCareBtnTextDisabled: {
+    color: colors.textMute,
+  },
+  speciesHint: {
+    fontFamily: fonts.sans,
+    fontSize: 11.5,
+    color: colors.textMute,
+    marginTop: -6,
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+
+  // ── Care preview card
+  carePreview: {
+    backgroundColor: colors.bgMint,
+    borderWidth: 1,
+    borderColor: 'rgba(92,138,92,0.35)',
+    borderRadius: radii.lg,
+    padding: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  carePreviewTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  carePreviewName: {
+    flex: 1,
+    fontFamily: fonts.serifItalic,
+    fontStyle: 'italic',
+    fontSize: 15,
+    color: colors.text,
+    letterSpacing: -0.1,
+  },
+  carePreviewDiff: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+  },
+  diffEasy: { backgroundColor: colors.bgMint, borderColor: 'rgba(92,138,92,0.35)' },
+  diffMed:  { backgroundColor: colors.amberSoft, borderColor: colors.amberLine },
+  diffHard: { backgroundColor: colors.danger, borderColor: colors.danger },
+  carePreviewDiffText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
+  },
+  carePreviewDetails: {
+    gap: 4,
+  },
+  carePreviewItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  carePreviewItemText: {
+    flex: 1,
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textSoft,
   },
 });
