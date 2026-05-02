@@ -10,6 +10,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import * as FileSystem from 'expo-file-system';
+
 import { colors, fonts } from '../utils/theme';
 import { analyzeImage } from '../utils/api';
 import { addToHistory } from '../utils/history';
@@ -100,11 +102,28 @@ export default function AnalyzingScreen({ navigation, route }) {
   useEffect(() => {
     analyzeImage(photoUri, mediaType, symptom)
       .then(async (data) => {
+        // Copy temp photo to a permanent path so it survives cache clears.
+        // Fall back to the temp URI if the copy fails (e.g. simulator quirks).
+        let permanentUri = null;
+        if (photoUri) {
+          try {
+            const dir = FileSystem.documentDirectory + 'plants/';
+            const info = await FileSystem.getInfoAsync(dir);
+            if (!info.exists) {
+              await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+            }
+            permanentUri = `${dir}${Date.now()}.jpg`;
+            await FileSystem.copyAsync({ from: photoUri, to: permanentUri });
+          } catch {
+            permanentUri = photoUri;
+          }
+        }
         // Use data.symptom (backend-resolved: user chip or auto-detected) — do NOT
         // re-spread the raw route-param `symptom`, which would overwrite auto-detections
         // with the user's chip selection (often "None").
-        const saved = await addToHistory({ ...data, photoUri });
-        setReport(saved ?? data);
+        const reportWithPhoto = { ...data, photoUri: permanentUri };
+        const saved = await addToHistory(reportWithPhoto);
+        setReport(saved ?? reportWithPhoto);
       })
       .catch(err => {
         Alert.alert(

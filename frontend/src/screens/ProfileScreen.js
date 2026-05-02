@@ -5,431 +5,409 @@ import {
   ScrollView,
   Pressable,
   Switch,
+  Alert,
   StyleSheet,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fonts, radii, gradients } from '../utils/theme';
+import { colors, fonts, radii } from '../utils/theme';
 import { getHistory } from '../utils/history';
 import * as Ico from '../components/Ico';
 
-// ─── Sub-components ───────────────────────────────────────────
+// ── Stats + achievement unlock computation ────────────────────
+function computeStats(history) {
+  const total = history.length;
+  const speciesSet = new Set(history.map((i) => i.species).filter(Boolean));
+  const healthy = history.filter((i) => !i.symptom).length;
+  const healthyPct = total > 0 ? Math.round((healthy / total) * 100) : 0;
 
-function StatBlock({ value, label }) {
+  let spanDays = 0;
+  if (history.length >= 2) {
+    const ts = history.map((i) => new Date(i.timestamp).getTime());
+    spanDays = Math.round((Math.max(...ts) - Math.min(...ts)) / 86400000);
+  }
+
+  return {
+    total,
+    species: speciesSet.size,
+    healthyPct,
+    unlocked: {
+      first_scan: total >= 1,
+      five_plants: total >= 5,
+      weekly:      spanDays >= 7,
+      explorer:    speciesSet.size >= 3,
+    },
+  };
+}
+
+const ACHIEVEMENTS = [
+  { id: 'first_scan', label: 'FIRST SCAN', Icon: Ico.Trophy },
+  { id: 'five_plants', label: '5 PLANTS',  Icon: Ico.Leaf   },
+  { id: 'weekly',      label: 'WEEKLY',    Icon: Ico.Drop   },
+  { id: 'explorer',    label: 'EXPLORER',  Icon: Ico.Star   },
+];
+
+// ── Stat card ─────────────────────────────────────────────────
+function StatCard({ value, label }) {
   return (
-    <View style={styles.statBlock}>
+    <View style={styles.statCard}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
-function AchievementTile({ icon, label, bg, border }) {
+// ── Achievement badge ─────────────────────────────────────────
+function Badge({ label, Icon, unlocked }) {
   return (
-    <View style={[styles.achTile, { backgroundColor: bg, borderColor: border }]}>
-      {icon}
-      <Text style={styles.achLabel}>{label}</Text>
+    <View style={[styles.badge, !unlocked && styles.badgeLocked]}>
+      <View style={styles.badgeIconWrap}>
+        <Icon color={unlocked ? colors.pine : colors.textMute} size={18} />
+      </View>
+      <Text style={styles.badgeLabel}>{label}</Text>
     </View>
   );
 }
 
-function SettingRow({ icon, label, trail, last, isSwitch, switchValue, onSwitch }) {
+// ── Settings row ──────────────────────────────────────────────
+function SettingsRow({ icon: Icon, label, danger, toggle, toggleValue, onToggleChange, onPress, showBorder }) {
   return (
-    <View style={[styles.settingRow, !last && styles.settingRowBorder]}>
-      <View style={styles.settingIconWrap}>{icon}</View>
-      <Text style={styles.settingLabel}>{label}</Text>
-      {isSwitch ? (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.settingsRow,
+        showBorder && styles.settingsRowBorder,
+        pressed && { opacity: 0.7 },
+      ]}
+    >
+      {Icon && (
+        <View style={styles.settingsIconTile}>
+          <Icon color={colors.pine} size={16} />
+        </View>
+      )}
+      <Text style={[styles.settingsLabel, danger && styles.settingsLabelDanger]}>
+        {label}
+      </Text>
+      {toggle ? (
         <Switch
-          value={switchValue}
-          onValueChange={onSwitch}
-          trackColor={{ false: colors.line, true: colors.leaf }}
-          thumbColor={colors.bgRaise}
-          style={styles.switch}
+          value={toggleValue}
+          onValueChange={onToggleChange}
+          trackColor={{ false: colors.lineSoft, true: colors.bgMint }}
+          thumbColor={toggleValue ? colors.pine : '#bbb'}
         />
-      ) : trail ? (
-        <Text style={styles.settingTrail}>{trail}</Text>
+      ) : !danger ? (
+        <Ico.Chevron color={colors.textMute} size={16} />
       ) : null}
-      {!isSwitch && <Ico.Chevron color={colors.textMute} size={16} />}
-    </View>
+    </Pressable>
   );
 }
 
-// ─── Screen ───────────────────────────────────────────────────
-
-export default function ProfileScreen({ navigation }) {
+// ── Screen ────────────────────────────────────────────────────
+export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const [scanCount, setScanCount]     = useState(0);
-  const [plantCount, setPlantCount]   = useState(0);
-  const [healthyPct, setHealthyPct]   = useState(0);
-  const [reminders, setReminders]     = useState(true);
+  const [stats, setStats] = useState({ total: 0, species: 0, healthyPct: 0, unlocked: {} });
+  const [notificationsOn, setNotificationsOn] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      getHistory().then(history => {
-        const total   = history.length;
-        const healthy = history.filter(h => !h.symptom).length;
-        const species = new Set(history.map(h => h.species).filter(Boolean)).size;
-        setScanCount(total);
-        setPlantCount(species || total);
-        setHealthyPct(total > 0 ? Math.round((healthy / total) * 100) : 0);
-      });
+      getHistory().then((h) => setStats(computeStats(h)));
     }, [])
   );
 
-  const topPad = Math.max(56, insets.top + 16);
+  const topPad = Math.max(56, insets.top + 8);
+
+  function comingSoon() {
+    Alert.alert('Coming soon', 'This feature is coming in a future update.');
+  }
 
   return (
-    <View style={styles.root}>
-      {/* Mint wash behind header area */}
-      <LinearGradient
-        colors={[colors.bgMint, colors.bg]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.bgWash}
-        pointerEvents="none"
-      />
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.content, { paddingTop: topPad }]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* ── Header ─────────────────────────────────────── */}
+      <View style={styles.header}>
+        <Text style={styles.headerMeta}>Profile</Text>
+        <Text style={styles.headerTitle}>
+          {'Your '}
+          <Text style={styles.headerItalic}>garden</Text>
+        </Text>
+      </View>
 
+      {/* ── Avatar block ───────────────────────────────── */}
+      <View style={styles.avatarBlock}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarInitials}>GT</Text>
+        </View>
+        <Text style={styles.avatarName}>Plant Parent</Text>
+        <Text style={styles.avatarSub}>Tracking your garden</Text>
+      </View>
+
+      {/* ── Stats row ──────────────────────────────────── */}
+      <View style={styles.statsRow}>
+        <StatCard value={String(stats.total)} label="SCANS" />
+        <StatCard value={String(stats.species)} label="PLANTS" />
+        <StatCard value={`${stats.healthyPct}%`} label="HEALTHY" />
+      </View>
+
+      {/* ── Achievements ───────────────────────────────── */}
+      <Text style={styles.sectionLabel}>Achievements</Text>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: topPad }]}
-        showsVerticalScrollIndicator={false}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.achievementsRow}
       >
-        {/* ── Header ─────────────────────────────────────── */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.metaLabel}>Profile</Text>
-            <Text style={styles.headline}>
-              <Text style={styles.headlineItalic}>Your</Text>
-              {' '}garden
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => {}}
-            style={({ pressed }) => [styles.settingsBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Ico.Settings color={colors.text} size={18} />
-          </Pressable>
-        </View>
-
-        {/* ── Avatar block ───────────────────────────────── */}
-        <View style={styles.avatarBlock}>
-          <LinearGradient
-            colors={[colors.leaf, colors.pine]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatar}
-          >
-            <Text style={styles.avatarInitial}>K</Text>
-          </LinearGradient>
-          <View style={styles.avatarInfo}>
-            <Text style={styles.avatarName}>Kai Nakamura</Text>
-            <Text style={styles.avatarEmail}>kai@plantmail.co</Text>
-            <Text style={styles.avatarBadge}>✦ green thumb · since 2024</Text>
-          </View>
-        </View>
-
-        {/* ── Stats card ─────────────────────────────────── */}
-        <View style={styles.statsCard}>
-          <Text style={styles.cardMeta}>Garden stats</Text>
-          <View style={styles.statsGrid}>
-            <StatBlock value={String(scanCount)} label="scans" />
-            <StatBlock value={String(plantCount)} label="plants saved" />
-            <StatBlock
-              value={scanCount > 0 ? `${healthyPct}%` : '—'}
-              label="healthy rate"
-            />
-          </View>
-        </View>
-
-        {/* ── Achievement strip ──────────────────────────── */}
-        <View style={styles.achStrip}>
-          <AchievementTile
-            icon={<Ico.Trophy color={colors.pine} size={16} />}
-            label="7-day streak"
-            bg={colors.bgMint}
-            border={colors.line}
+        {ACHIEVEMENTS.map((a) => (
+          <Badge
+            key={a.id}
+            label={a.label}
+            Icon={a.Icon}
+            unlocked={!!stats.unlocked[a.id]}
           />
-          <AchievementTile
-            icon={<Ico.Leaf color={colors.pine} size={16} />}
-            label="First scan"
-            bg={colors.bgSage}
-            border={colors.line}
-          />
-          <AchievementTile
-            icon={<Ico.Drop color={colors.amberDeep} size={16} />}
-            label="Plant saver"
-            bg={colors.amberSoft}
-            border={colors.amberLine}
-          />
-        </View>
-
-        {/* ── Settings ───────────────────────────────────── */}
-        <Text style={styles.sectionMeta}>Account</Text>
-        <View style={styles.settingsCard}>
-          <SettingRow
-            icon={<Ico.Bell color={colors.text} size={18} />}
-            label="Watering reminders"
-            isSwitch
-            switchValue={reminders}
-            onSwitch={setReminders}
-          />
-          <SettingRow
-            icon={<Ico.Reminder color={colors.text} size={18} />}
-            label="Care schedule"
-            trail="Weekly"
-          />
-          <SettingRow
-            icon={<Ico.Share color={colors.text} size={18} />}
-            label="Share my garden"
-          />
-          <SettingRow
-            icon={<Ico.User color={colors.text} size={18} />}
-            label="Edit profile"
-          />
-          <SettingRow
-            icon={<Ico.Settings color={colors.text} size={18} />}
-            label="App settings"
-            last
-          />
-        </View>
-
-        {/* ── Sign out ───────────────────────────────────── */}
-        <Pressable
-          onPress={() => {}}
-          style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={styles.signOutText}>Sign out</Text>
-        </Pressable>
+        ))}
       </ScrollView>
-    </View>
+
+      {/* ── Settings ───────────────────────────────────── */}
+      <Text style={styles.sectionLabel}>Settings</Text>
+      <View style={styles.settingsCard}>
+        <SettingsRow
+          icon={Ico.Bell}
+          label="Notifications"
+          toggle
+          toggleValue={notificationsOn}
+          onToggleChange={setNotificationsOn}
+          onPress={comingSoon}
+        />
+        <SettingsRow
+          icon={Ico.Reminder}
+          label="Watering reminders"
+          showBorder
+          onPress={comingSoon}
+        />
+        <SettingsRow
+          icon={Ico.Share}
+          label="Share my garden"
+          showBorder
+          onPress={comingSoon}
+        />
+        <SettingsRow
+          icon={Ico.Settings}
+          label="About Green Thumbs"
+          showBorder
+          onPress={comingSoon}
+        />
+        <SettingsRow
+          danger
+          label="Sign out"
+          showBorder
+          onPress={comingSoon}
+        />
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Green Thumbs · v1.0</Text>
+      </View>
+    </ScrollView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
   },
-  bgWash: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    height: 280,
-  },
-  scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 24,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
 
   // Header
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 22,
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
   },
-  metaLabel: {
+  headerMeta: {
     fontFamily: fonts.mono,
     fontSize: 10.5,
     color: colors.textMute,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
+    marginBottom: 6,
   },
-  headline: {
+  headerTitle: {
     fontFamily: fonts.serif,
     fontSize: 32,
-    lineHeight: 38,
+    lineHeight: 36,
     color: colors.text,
     letterSpacing: -0.3,
-    marginTop: 8,
   },
-  headlineItalic: {
+  headerItalic: {
     fontFamily: fonts.serifItalic,
     fontStyle: 'italic',
-  },
-  settingsBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.bgRaise,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
   },
 
   // Avatar block
   avatarBlock: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    marginBottom: 22,
+    marginTop: 24,
+    marginBottom: 8,
+    gap: 6,
   },
   avatar: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.bgSage,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
-    borderWidth: 3,
-    borderColor: colors.bgRaise,
+    marginBottom: 4,
   },
-  avatarInitial: {
-    fontFamily: fonts.serifItalic,
-    fontStyle: 'italic',
-    fontSize: 36,
-    color: '#FBFAF3',
-  },
-  avatarInfo: { flex: 1 },
-  avatarName: {
+  avatarInitials: {
     fontFamily: fonts.serif,
-    fontSize: 24,
-    color: colors.text,
-    letterSpacing: -0.3,
+    fontSize: 36,
+    lineHeight: 40,
+    color: colors.pine,
   },
-  avatarEmail: {
+  avatarName: {
+    fontFamily: fonts.sansBold,
+    fontSize: 18,
+    color: colors.text,
+  },
+  avatarSub: {
     fontFamily: fonts.sans,
     fontSize: 13,
-    color: colors.textSoft,
-    marginTop: 4,
-  },
-  avatarBadge: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    color: colors.leaf,
-    letterSpacing: 0.6,
-    marginTop: 6,
-    textTransform: 'uppercase',
+    color: colors.textMute,
   },
 
-  // Stats card
-  statsCard: {
+  // Stats
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    marginTop: 24,
+  },
+  statCard: {
+    flex: 1,
     backgroundColor: colors.bgRaise,
-    borderRadius: radii['2xl'],
     borderWidth: 1,
     borderColor: colors.line,
-    padding: 18,
-    marginBottom: 16,
+    borderRadius: radii.xl,
+    padding: 14,
+    alignItems: 'center',
   },
-  cardMeta: {
-    fontFamily: fonts.mono,
-    fontSize: 10.5,
-    color: colors.textMute,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    marginBottom: 14,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statBlock: { flex: 1 },
   statValue: {
     fontFamily: fonts.serif,
-    fontSize: 28,
-    lineHeight: 32,
+    fontSize: 26,
+    lineHeight: 30,
     color: colors.text,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   statLabel: {
     fontFamily: fonts.mono,
     fontSize: 9.5,
     color: colors.textMute,
-    letterSpacing: 0.8,
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
     marginTop: 4,
   },
 
-  // Achievement strip
-  achStrip: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 22,
-  },
-  achTile: {
-    flex: 1,
-    padding: 12,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    gap: 6,
-  },
-  achLabel: {
+  // Section label
+  sectionLabel: {
     fontFamily: fonts.sansBold,
     fontSize: 11,
-    color: colors.text,
+    color: colors.textMute,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: 24,
+    marginTop: 28,
+    marginBottom: 12,
   },
 
-  // Settings section
-  sectionMeta: {
-    fontFamily: fonts.mono,
-    fontSize: 10.5,
-    color: colors.textMute,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    marginBottom: 8,
+  // Achievements
+  achievementsRow: {
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 2,
   },
+  badge: {
+    alignItems: 'center',
+    width: 76,
+  },
+  badgeLocked: {
+    opacity: 0.35,
+  },
+  badgeIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.bgSage,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeLabel: {
+    fontFamily: fonts.mono,
+    fontSize: 8.5,
+    color: colors.textMute,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+
+  // Settings
   settingsCard: {
+    marginHorizontal: 16,
     backgroundColor: colors.bgRaise,
-    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.line,
-    paddingHorizontal: 4,
-    marginBottom: 14,
+    borderRadius: radii['2xl'],
+    overflow: 'hidden',
   },
-  settingRow: {
+  settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    paddingHorizontal: 10,
+    gap: 12,
+    backgroundColor: colors.bgRaise,
   },
-  settingRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.lineSoft,
+  settingsRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
   },
-  settingIconWrap: {
+  settingsIconTile: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: radii.sm,
     backgroundColor: colors.bgSage,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  settingLabel: {
+  settingsLabel: {
     flex: 1,
     fontFamily: fonts.sans,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.text,
   },
-  settingTrail: {
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    color: colors.textMute,
-    letterSpacing: 0.4,
-    marginRight: 4,
-  },
-  switch: {
-    marginRight: 4,
+  settingsLabelDanger: {
+    fontFamily: fonts.sansBold,
+    color: colors.danger,
+    textAlign: 'center',
   },
 
-  // Sign out
-  signOutBtn: {
-    height: 48,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.line,
+  // Footer
+  footer: {
+    marginTop: 32,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  signOutText: {
-    fontFamily: fonts.sansBold,
-    fontSize: 13,
-    color: colors.textSoft,
+  footerText: {
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    color: colors.textMute,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 });

@@ -17,6 +17,7 @@ export async function addToHistory(report) {
     const existing = await getHistory();
     const entry = {
       ...report,
+      photoUri: report.photoUri ?? null,
       id: 'scan_' + Date.now(),
       timestamp: new Date().toISOString(),
     };
