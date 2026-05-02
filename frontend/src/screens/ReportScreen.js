@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -126,14 +126,6 @@ function CareTile({ Icon, iconColor, label, value }) {
 export default function ReportScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { report } = route.params ?? {};
-  const autoSaved = useRef(false);
-
-  useEffect(() => {
-    if (report && !autoSaved.current) {
-      autoSaved.current = true;
-      addToHistory(report);
-    }
-  }, []);
 
   if (!report) {
     return (
@@ -161,7 +153,7 @@ export default function ReportScreen({ navigation, route }) {
   const diffColors = diffPillColors(report.difficulty);
 
   const handleSave = () => {
-    addToHistory(report);
+    if (!report.id) addToHistory(report);
     navigation.navigate('MainTabs');
   };
 
