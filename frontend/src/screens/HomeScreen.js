@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
+  Image,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -85,7 +86,15 @@ function ScanCard({ item, onPress }) {
       style={({ pressed }) => [styles.scanCard, pressed && { opacity: 0.7 }]}
     >
       <View style={{ position: 'relative' }}>
-        <PlantPlaceholder size={110} rx={radii.xl} label={genus.toUpperCase()} />
+        {item.photoUri ? (
+          <Image
+            source={{ uri: item.photoUri }}
+            style={{ width: 110, height: 110, borderRadius: radii.xl }}
+            resizeMode="cover"
+          />
+        ) : (
+          <PlantPlaceholder size={110} rx={radii.xl} label={genus.toUpperCase()} />
+        )}
         {item.symptom && (
           <View style={styles.symptomDot} />
         )}
@@ -117,12 +126,19 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      {/* Botanical wash — diagonal mint fade top-right */}
+      {/* Botanical wash — radial-style mint bloom from top-right */}
       <LinearGradient
-        colors={[colors.bgMint, 'transparent']}
-        start={{ x: 0.85, y: 0 }}
-        end={{ x: 0, y: 0.55 }}
-        style={[styles.botanicalWash]}
+        colors={[
+          '#DCE7C7',               // bgMint full opacity
+          'rgba(220,231,199,0.75)',
+          'rgba(220,231,199,0.4)',
+          'rgba(244,241,232,0.1)',
+          'rgba(244,241,232,0)',   // bg at zero opacity — avoids Android black-band banding
+        ]}
+        locations={[0, 0.25, 0.5, 0.72, 1]}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 0.6 }}
+        style={styles.botanicalWash}
         pointerEvents="none"
       />
 

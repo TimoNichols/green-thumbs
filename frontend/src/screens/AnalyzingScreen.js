@@ -14,7 +14,7 @@ import * as FileSystem from 'expo-file-system';
 
 import { colors, fonts } from '../utils/theme';
 import { analyzeImage } from '../utils/api';
-import { addToHistory } from '../utils/history';
+import { addToHistory, updateHistory } from '../utils/history';
 import { PlantPlaceholder } from './HomeScreen';
 import * as Ico from '../components/Ico';
 
@@ -25,7 +25,7 @@ const STEPS = [
 ];
 
 export default function AnalyzingScreen({ navigation, route }) {
-  const { photoUri, mediaType = 'image/jpeg', symptom = 'None' } = route.params ?? {};
+  const { photoUri, mediaType = 'image/jpeg', symptom = 'None', linkedPlantId } = route.params ?? {};
   const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState(0);
@@ -122,7 +122,13 @@ export default function AnalyzingScreen({ navigation, route }) {
         // re-spread the raw route-param `symptom`, which would overwrite auto-detections
         // with the user's chip selection (often "None").
         const reportWithPhoto = { ...data, photoUri: permanentUri };
-        const saved = await addToHistory(reportWithPhoto);
+        let saved;
+        if (linkedPlantId) {
+          // Merge care data into the existing manual entry and clear the manual flag
+          saved = await updateHistory(linkedPlantId, { ...reportWithPhoto, source: null });
+        } else {
+          saved = await addToHistory(reportWithPhoto);
+        }
         setReport(saved ?? reportWithPhoto);
       })
       .catch(err => {

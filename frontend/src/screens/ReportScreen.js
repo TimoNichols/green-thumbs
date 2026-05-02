@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,19 @@ import {
   Pressable,
   StyleSheet,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect as SR } from 'react-native-svg';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 import { colors, fonts, radii } from '../utils/theme';
 import * as Ico from '../components/Ico';
-import { addToHistory } from '../utils/history';
+import { addToHistory, updateHistory, getHistory } from '../utils/history';
 
 const SCREEN_W = Dimensions.get('window').width;
 const HERO_H = 260;
@@ -125,15 +129,35 @@ function CareTile({ Icon, iconColor, label, value }) {
 // ─── Screen ───────────────────────────────────────────────────
 export default function ReportScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const { report } = route.params ?? {};
+  const { report: initialReport } = route.params ?? {};
 
-  if (!report) {
+  const [currentReport, setCurrentReport] = useState(initialReport ?? null);
+  const [currentPhotoUri, setCurrentPhotoUri] = useState(initialReport?.photoUri ?? null);
+
+  // When returning from a scan of a manual plant, re-fetch to pick up merged care data
+  useFocusEffect(
+    useCallback(() => {
+      if (!currentReport?.id || currentReport.source !== 'manual') return;
+      getHistory().then((all) => {
+        const fresh = all.find((e) => e.id === currentReport.id);
+        if (fresh && fresh.source !== 'manual') {
+          setCurrentReport(fresh);
+          setCurrentPhotoUri(fresh.photoUri ?? null);
+        }
+      });
+    }, [currentReport?.id, currentReport?.source])
+  );
+
+  if (!currentReport) {
     return (
       <View style={[styles.root, styles.emptyRoot]}>
         <Text style={styles.emptyText}>No report data.</Text>
       </View>
     );
   }
+
+  const report = currentReport;
+  const isManual = report.source === 'manual';
 
   const genus   = report.species?.split(' ')[0] ?? '';
   const epithet = report.species?.split(' ').slice(1).join(' ') ?? '';
@@ -157,14 +181,60 @@ export default function ReportScreen({ navigation, route }) {
     navigation.navigate('MainTabs');
   };
 
+  async function persistPhoto(uri) {
+    let permanentUri = uri;
+    try {
+      const dir = FileSystem.documentDirectory + 'plants/';
+      const info = await FileSystem.getInfoAsync(dir);
+      if (!info.exists) {
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      }
+      permanentUri = `${dir}${Date.now()}.jpg`;
+      await FileSystem.copyAsync({ from: uri, to: permanentUri });
+    } catch {
+      permanentUri = uri;
+    }
+    setCurrentPhotoUri(permanentUri);
+    if (report.id) {
+      await updateHistory(report.id, { photoUri: permanentUri });
+    }
+  }
+
+  function handlePickPhoto() {
+    Alert.alert('Add photo', undefined, [
+      {
+        text: 'Take photo',
+        onPress: async () => {
+          const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
+          if (!result.canceled && result.assets?.[0]) {
+            await persistPhoto(result.assets[0].uri);
+          }
+        },
+      },
+      {
+        text: 'Choose from library',
+        onPress: async () => {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            quality: 0.85,
+          });
+          if (!result.canceled && result.assets?.[0]) {
+            await persistPhoto(result.assets[0].uri);
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
   return (
     <View style={styles.root}>
 
       {/* ── Hero image / placeholder ──────────────────────────── */}
       <View style={styles.hero}>
-        {report.photoUri ? (
+        {currentPhotoUri ? (
           <Image
-            source={{ uri: report.photoUri }}
+            source={{ uri: currentPhotoUri }}
             style={StyleSheet.absoluteFillObject}
             contentFit="cover"
           />
@@ -178,13 +248,11 @@ export default function ReportScreen({ navigation, route }) {
           locations={[0, 0.45, 1]}
           style={styles.heroScrim}
         >
-          {/* Species binomial in italic over the photo */}
           <Text style={styles.heroSpecies} numberOfLines={2}>
             <Text style={styles.heroGenusItalic}>{genus}</Text>
             {epithet ? <Text style={styles.heroEpithet}>{' '}{epithet}</Text> : null}
           </Text>
 
-          {/* Confidence + source badges inline */}
           <View style={styles.heroBadgeRow}>
             {confidencePct != null && (
               <View style={styles.heroBadge}>
@@ -192,15 +260,26 @@ export default function ReportScreen({ navigation, route }) {
                 <Text style={styles.heroBadgeText}>{confidencePct}% match</Text>
               </View>
             )}
-            {report.source != null && (
+            {report.source === 'cache' && (
               <View style={[styles.heroBadge, styles.heroBadgeSource]}>
-                <Text style={styles.heroBadgeText}>
-                  {report.source === 'cache' ? 'Cached' : 'AI Generated'}
-                </Text>
+                <Text style={styles.heroBadgeText}>Cached</Text>
               </View>
             )}
           </View>
         </LinearGradient>
+
+        {/* Photo picker pill — manual plants only */}
+        {isManual && (
+          <Pressable
+            onPress={handlePickPhoto}
+            style={({ pressed }) => [styles.heroPhotoBtn, pressed && { opacity: 0.7 }]}
+          >
+            <Ico.Gallery color="#F4F1E8" size={15} />
+            <Text style={styles.heroPhotoBtnText}>
+              {currentPhotoUri ? 'Change photo' : 'Add photo'}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* ── Floating back + more buttons ────────────────────────── */}
@@ -231,11 +310,9 @@ export default function ReportScreen({ navigation, route }) {
             {report.common_name || report.species || 'Unknown Plant'}
           </Text>
           <View style={styles.badgeRow}>
-            {report.source != null && (
+            {report.source === 'cache' && (
               <View style={styles.sourceBadge}>
-                <Text style={styles.sourceBadgeText}>
-                  {report.source === 'cache' ? 'Cached' : 'AI Generated'}
-                </Text>
+                <Text style={styles.sourceBadgeText}>Cached</Text>
               </View>
             )}
             {report.difficulty && (
@@ -250,6 +327,27 @@ export default function ReportScreen({ navigation, route }) {
             )}
           </View>
         </View>
+
+        {/* ── Scan banner — manual plants only ───────────────────── */}
+        {isManual && (
+          <View style={styles.scanBanner}>
+            <View style={styles.scanBannerLeft}>
+              <View style={styles.scanBannerIconWrap}>
+                <Ico.Leaf color={colors.pine} size={16} />
+              </View>
+              <Text style={styles.scanBannerText}>
+                Scan this plant to get care details
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => navigation.navigate('Camera', { linkedPlantId: report.id })}
+              style={({ pressed }) => [styles.scanBannerBtn, pressed && { opacity: 0.8 }]}
+            >
+              <Ico.Scan color="#FBFAF3" size={14} />
+              <Text style={styles.scanBannerBtnText}>Scan now</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* ── Diagnosis card ─────────────────────────────────────── */}
         {diagnosis && (
@@ -279,31 +377,32 @@ export default function ReportScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* ── Care guide ─────────────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Care guide</Text>
-          <View style={styles.careGrid}>
-            {CARE_TILES.map((tile) => (
-              <CareTile key={tile.label} {...tile} />
-            ))}
-          </View>
-
-          {/* Placement — full-width row below 2×2 grid */}
-          {report.placement && (
-            <View style={styles.placementRow}>
-              <View style={styles.careIconBadge}>
-                <Ico.Garden color={colors.pine} size={18} />
-              </View>
-              <View style={styles.placementBody}>
-                <Text style={styles.careTileLabel}>PLACEMENT</Text>
-                <Text style={styles.placementValue}>{report.placement}</Text>
-              </View>
+        {/* ── Care guide — hidden for manual entries (no data yet) ── */}
+        {!isManual && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Care guide</Text>
+            <View style={styles.careGrid}>
+              {CARE_TILES.map((tile) => (
+                <CareTile key={tile.label} {...tile} />
+              ))}
             </View>
-          )}
-        </View>
 
-        {/* ── Health tips ────────────────────────────────────────── */}
-        {report.health_tips?.length > 0 && (
+            {report.placement && (
+              <View style={styles.placementRow}>
+                <View style={styles.careIconBadge}>
+                  <Ico.Garden color={colors.pine} size={18} />
+                </View>
+                <View style={styles.placementBody}>
+                  <Text style={styles.careTileLabel}>PLACEMENT</Text>
+                  <Text style={styles.placementValue}>{report.placement}</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ── Health tips — hidden for manual entries ─────────────── */}
+        {!isManual && report.health_tips?.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.tipsSectionHeader}>
               <Text style={styles.tipsSectionHeaderItalic}>Health</Text>
@@ -331,13 +430,15 @@ export default function ReportScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* ── Save to My Plants ────────────────────────────────── */}
-        <Pressable
-          onPress={handleSave}
-          style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.75 }]}
-        >
-          <Text style={styles.saveBtnText}>+ Save to My Plants</Text>
-        </Pressable>
+        {/* ── Save to My Plants — hidden for manual (already saved) ── */}
+        {!isManual && (
+          <Pressable
+            onPress={handleSave}
+            style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.75 }]}
+          >
+            <Text style={styles.saveBtnText}>+ Save to My Plants</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
@@ -719,6 +820,79 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     lineHeight: 19,
     color: colors.text,
+  },
+
+  // ── Manual photo pill
+  heroPhotoBtn: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(14,26,18,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  heroPhotoBtnText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 12,
+    color: '#F4F1E8',
+    letterSpacing: 0.2,
+  },
+
+  // ── Scan banner
+  scanBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.bgSage,
+    borderWidth: 1,
+    borderColor: 'rgba(92,138,92,0.35)',
+    borderRadius: radii['2xl'],
+    padding: 14,
+    marginBottom: 22,
+  },
+  scanBannerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  scanBannerIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: colors.bgMint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  scanBannerText: {
+    flex: 1,
+    fontFamily: fonts.sans,
+    fontSize: 13.5,
+    lineHeight: 18,
+    color: colors.pine,
+  },
+  scanBannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radii.lg,
+    backgroundColor: colors.pine,
+    flexShrink: 0,
+  },
+  scanBannerBtnText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 12,
+    color: '#FBFAF3',
+    letterSpacing: 0.2,
   },
 
   // ── Save button

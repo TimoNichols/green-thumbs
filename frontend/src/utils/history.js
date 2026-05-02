@@ -39,6 +39,17 @@ export async function deleteFromHistory(id) {
   }
 }
 
+export async function updateHistory(id, updates) {
+  try {
+    const existing = await getHistory();
+    const updated = existing.map((e) => e.id === id ? { ...e, ...updates } : e);
+    await AsyncStorage.setItem(KEY, JSON.stringify(updated));
+    return updated.find((e) => e.id === id) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function clearHistory() {
   try {
     await AsyncStorage.removeItem(KEY);

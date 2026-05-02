@@ -18,7 +18,8 @@ import * as Ico from '../components/Ico';
 
 const SYMPTOMS = ['None', 'Yellow edges', 'Brown tips', 'Drooping', 'Spots'];
 
-export default function CameraScreen({ navigation }) {
+export default function CameraScreen({ navigation, route }) {
+  const { linkedPlantId } = route.params ?? {};
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState('back');
@@ -52,6 +53,7 @@ export default function CameraScreen({ navigation }) {
         photoUri: photo.uri,
         mediaType: 'image/jpeg',
         symptom,
+        linkedPlantId,
       });
     } catch {
       setTaking(false);
@@ -71,6 +73,7 @@ export default function CameraScreen({ navigation }) {
         photoUri: asset.uri,
         mediaType,
         symptom,
+        linkedPlantId,
       });
     }
   }

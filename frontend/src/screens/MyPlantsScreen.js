@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -189,17 +189,21 @@ function AddManuallySheet({ visible, tab, onClose, onSave }) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
+  const [destination, setDestination] = useState(tab);
+
+  // Re-default to whichever tab is active each time the sheet opens
+  useEffect(() => {
+    if (visible) setDestination(tab);
+  }, [visible, tab]);
 
   function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    onSave({ common_name: trimmed, species: species.trim() || null });
+    onSave({ common_name: trimmed, species: species.trim() || null }, destination);
     setName('');
     setSpecies('');
     onClose();
   }
-
-  const isWishlist = tab === 'wishlist';
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -210,9 +214,27 @@ function AddManuallySheet({ visible, tab, onClose, onSave }) {
         <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom + 8, 28) }]}>
           <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>
-            {isWishlist ? 'Add to wishlist' : 'Add plant'}
-          </Text>
+
+          <View style={[styles.segControl, { marginHorizontal: 0, marginBottom: 20 }]}>
+            <Pressable
+              onPress={() => setDestination('plants')}
+              style={[styles.segItem, destination === 'plants' && styles.segItemActive]}
+            >
+              <Text style={[styles.segText, destination === 'plants' && styles.segTextActive]}>
+                My Plants
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setDestination('wishlist')}
+              style={[styles.segItem, destination === 'wishlist' && styles.segItemActive]}
+            >
+              <Text style={[styles.segText, destination === 'wishlist' && styles.segTextActive]}>
+                Wishlist
+              </Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.sheetTitle}>Add plant</Text>
 
           <TextInput
             style={styles.input}
@@ -245,7 +267,7 @@ function AddManuallySheet({ visible, tab, onClose, onSave }) {
             ]}
           >
             <Text style={styles.sheetSaveBtnText}>
-              {isWishlist ? 'Add to Wishlist' : 'Add to My Plants'}
+              {destination === 'wishlist' ? 'Add to Wishlist' : 'Add to My Plants'}
             </Text>
           </Pressable>
         </View>
@@ -296,8 +318,8 @@ export default function MyPlantsScreen({ navigation }) {
     if (plant) setItems((prev) => [plant, ...prev]);
   }
 
-  async function handleAddSave(data) {
-    if (tab === 'wishlist') {
+  async function handleAddSave(data, destination) {
+    if (destination === 'wishlist') {
       const entry = await addToWishlist(data);
       if (entry) setWishlistItems((prev) => [entry, ...prev]);
     } else {
