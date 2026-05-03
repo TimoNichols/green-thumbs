@@ -50,8 +50,8 @@ function SwipeableRow({ children, onDelete }) {
   const startX = useSharedValue(0);
 
   const gesture = Gesture.Pan()
-    .activeOffsetX([-8, 8])
-    .failOffsetY([-5, 5])
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-10, 10])
     .onBegin(() => {
       startX.value = tx.value;
     })
