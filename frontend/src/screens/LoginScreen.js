@@ -112,16 +112,6 @@ export default function LoginScreen({ navigation }) {
           }
         </Pressable>
 
-        {/* Register link */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>New here?</Text>
-          <Pressable
-            onPress={() => navigation.navigate('Register')}
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-          >
-            <Text style={styles.footerLink}>Create an account</Text>
-          </Pressable>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -214,19 +204,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  footerText: {
-    fontFamily: fonts.sans,
-    fontSize: 14,
-    color: colors.textMute,
-  },
-  footerLink: {
-    fontFamily: fonts.sansBold,
-    fontSize: 14,
-    color: colors.pine,
-  },
 });

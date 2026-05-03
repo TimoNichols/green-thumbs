@@ -25,6 +25,7 @@ export default function RegisterScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   async function handleRegister() {
     const e = email.trim().toLowerCase();
@@ -43,11 +44,7 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       await signUp(e, password);
-      Alert.alert(
-        'Account created',
-        'Check your email for a confirmation link, then sign in.',
-        [{ text: 'Sign in', onPress: () => navigation.navigate('Login') }]
-      );
+      setSuccess(true);
     } catch (err) {
       Alert.alert('Registration failed', err.message || 'Something went wrong. Please try again.');
     } finally {
@@ -127,28 +124,23 @@ export default function RegisterScreen({ navigation }) {
           </View>
         </View>
 
-        {/* CTA */}
-        <Pressable
-          onPress={handleRegister}
-          disabled={loading}
-          style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.85 }]}
-        >
-          {loading
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.ctaBtnText}>Create account</Text>
-          }
-        </Pressable>
-
-        {/* Sign in link */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account?</Text>
+        {success ? (
+          <View style={styles.successBox}>
+            <Text style={styles.successText}>Account created!</Text>
+            <Text style={styles.successSub}>Check your email for a confirmation link, then sign in.</Text>
+          </View>
+        ) : (
           <Pressable
-            onPress={() => navigation.navigate('Login')}
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            onPress={handleRegister}
+            disabled={loading}
+            style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.85 }]}
           >
-            <Text style={styles.footerLink}>Sign in</Text>
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.ctaBtnText}>Create account</Text>
+            }
           </Pressable>
-        </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -241,19 +233,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  successBox: {
+    borderRadius: radii.xl,
+    backgroundColor: colors.bgSage,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 20,
+    alignItems: 'center',
     gap: 6,
   },
-  footerText: {
+  successText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 16,
+    color: colors.pine,
+  },
+  successSub: {
     fontFamily: fonts.sans,
     fontSize: 14,
-    color: colors.textMute,
-  },
-  footerLink: {
-    fontFamily: fonts.sansBold,
-    fontSize: 14,
-    color: colors.pine,
+    color: colors.textSoft,
+    textAlign: 'center',
   },
 });
