@@ -25,6 +25,7 @@ function fromRow(row) {
     auto_symptom_detail: row.auto_symptom_detail ?? null,
     text_diagnosis: row.text_diagnosis ?? null,
     schedule: row.schedule ?? {},
+    lastCare: row.last_care ?? {},
     notes: row.notes ?? null,
   };
 }
@@ -49,6 +50,7 @@ function toRow(report) {
     auto_symptom_detail: report.auto_symptom_detail ?? null,
     text_diagnosis: report.text_diagnosis ?? null,
     schedule: report.schedule ?? {},
+    last_care: report.lastCare ?? {},
     notes: report.notes ?? null,
   };
 }
@@ -73,6 +75,7 @@ function updatesToRow(updates) {
     auto_symptom_detail: "auto_symptom_detail",
     text_diagnosis: "text_diagnosis",
     schedule: "schedule",
+    lastCare: "last_care",
     notes: "notes",
   };
   const row = {};

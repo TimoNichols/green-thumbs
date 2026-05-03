@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fonts } from '../utils/theme';
-import { analyzeImage } from '../utils/api';
+import { analyzeImage, fetchWaterInterval } from '../utils/api';
 import { addToHistory, updateHistory, uploadPlantPhoto } from '../utils/history';
 import { PlantPlaceholder } from './HomeScreen';
 import * as Ico from '../components/Ico';
@@ -113,6 +113,15 @@ export default function AnalyzingScreen({ navigation, route }) {
         saved = await addToHistory(reportWithPhoto);
       }
       setReport(saved ?? reportWithPhoto);
+
+      // Fire-and-forget: set water schedule so Garden tab shows the task immediately
+      if (saved?.id && saved?.water) {
+        fetchWaterInterval(saved.water)
+          .then(({ intervalDays }) =>
+            updateHistory(saved.id, { schedule: { ...(saved.schedule ?? {}), water: intervalDays } })
+          )
+          .catch(() => {});
+      }
     };
 
     run().catch(err => {

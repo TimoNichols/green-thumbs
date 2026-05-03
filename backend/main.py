@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from analyzer import analyze_plant, get_care_for_species, diagnose_text
+from analyzer import analyze_plant, get_care_for_species, diagnose_text, parse_water_interval
 
 load_dotenv()
 
@@ -67,11 +67,25 @@ async def care(
     return await get_care_for_species(species.strip(), env)
 
 
+@app.post("/parse-interval")
+async def parse_interval(water_text: str = Form(...)):
+    if not water_text.strip():
+        raise HTTPException(status_code=400, detail="water_text is required")
+    return await parse_water_interval(water_text.strip())
+
+
 @app.post("/diagnose")
 async def diagnose(
     species: str = Form(...),
     symptom: str = Form(...),
+    care_data: str | None = Form(None),
 ):
     if not species.strip() or not symptom.strip():
         raise HTTPException(status_code=400, detail="species and symptom are required")
-    return await diagnose_text(species.strip(), symptom.strip())
+    care = None
+    if care_data:
+        try:
+            care = json.loads(care_data)
+        except (json.JSONDecodeError, ValueError):
+            care = None
+    return await diagnose_text(species.strip(), symptom.strip(), care)

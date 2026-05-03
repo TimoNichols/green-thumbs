@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,11 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  LayoutAnimation,
+  UIManager,
+  Platform,
+  Modal,
+  Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,7 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, fonts, radii } from '../utils/theme';
 import * as Ico from '../components/Ico';
 import { addToHistory, updateHistory, getHistory, uploadPlantPhoto } from '../utils/history';
-import { fetchDiagnosis } from '../utils/api';
+import { fetchDiagnosis, fetchWaterInterval } from '../utils/api';
 
 const SCREEN_W = Dimensions.get('window').width;
 const HERO_H = 260;
@@ -118,17 +123,31 @@ function HeroPlaceholder() {
 }
 
 // ─── Care tile ─────────────────────────────────────────────────
-function CareTile({ Icon, iconColor, label, value }) {
+function CareTile({ tileKey, Icon, iconColor, label, value, expanded, onPress, onSchedule, hasSchedule }) {
   return (
-    <View style={styles.careTile}>
+    <Pressable onPress={onPress} style={[styles.careTile, expanded && styles.careTileExpanded]}>
       <View style={styles.careTileTop}>
         <View style={styles.careIconBadge}>
           <Icon color={iconColor} size={18} />
         </View>
         <Text style={styles.careTileLabel}>{label}</Text>
+        <View style={{ transform: [{ rotate: expanded ? '-90deg' : '90deg' }] }}>
+          <Ico.Chevron color={colors.textMute} size={11} />
+        </View>
       </View>
-      <Text style={styles.careTileValue} numberOfLines={3}>{value}</Text>
-    </View>
+      <Text style={styles.careTileValue} numberOfLines={expanded ? undefined : 3}>{value}</Text>
+      {expanded && tileKey === 'water' && onSchedule && (
+        <Pressable
+          onPress={onSchedule}
+          style={({ pressed }) => [styles.scheduleWaterBtn, pressed && { opacity: 0.85 }]}
+        >
+          <Ico.Drop color={colors.pine} size={13} />
+          <Text style={styles.scheduleWaterBtnText}>
+            {hasSchedule ? 'Update schedule →' : 'Schedule watering →'}
+          </Text>
+        </Pressable>
+      )}
+    </Pressable>
   );
 }
 
@@ -142,6 +161,12 @@ export default function ReportScreen({ navigation, route }) {
   const [showSymptomPicker, setShowSymptomPicker] = useState(false);
   const [pickedSymptom, setPickedSymptom] = useState(null);
   const [diagnosing, setDiagnosing] = useState(false);
+  const [expandedTile, setExpandedTile] = useState(null);
+  const [fetchingInterval, setFetchingInterval] = useState(false);
+  const [scheduleConfirm, setScheduleConfirm] = useState({ visible: false, intervalDays: 7, label: '' });
+  const [schedulingWater, setSchedulingWater] = useState(false);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const [toastVisible, setToastVisible] = useState(false);
 
   // When returning from a scan of a manual plant, re-fetch to pick up merged care data
   useFocusEffect(
@@ -177,10 +202,10 @@ export default function ReportScreen({ navigation, route }) {
     : null;
 
   const CARE_TILES = [
-    { Icon: Ico.Drop,  iconColor: colors.pine,  label: 'WATER',    value: report.water    ?? '—' },
-    { Icon: Ico.Sun,   iconColor: colors.amber,  label: 'LIGHT',    value: report.sunlight ?? '—' },
-    { Icon: Ico.Soil,  iconColor: colors.text,   label: 'SOIL',     value: report.soil     ?? '—' },
-    { Icon: Ico.Humid, iconColor: colors.leaf,   label: 'HUMIDITY', value: report.humidity ?? '—' },
+    { tileKey: 'water',    Icon: Ico.Drop,  iconColor: colors.pine,  label: 'WATER',    value: report.water    ?? '—' },
+    { tileKey: 'light',    Icon: Ico.Sun,   iconColor: colors.amber,  label: 'LIGHT',    value: report.sunlight ?? '—' },
+    { tileKey: 'soil',     Icon: Ico.Soil,  iconColor: colors.text,   label: 'SOIL',     value: report.soil     ?? '—' },
+    { tileKey: 'humidity', Icon: Ico.Humid, iconColor: colors.leaf,   label: 'HUMIDITY', value: report.humidity ?? '—' },
   ];
 
   const diffColors = diffPillColors(report.difficulty);
@@ -205,7 +230,13 @@ export default function ReportScreen({ navigation, route }) {
     if (!speciesName) return;
     setDiagnosing(true);
     try {
-      const result = await fetchDiagnosis(speciesName, pickedSymptom);
+      const care = report.water ? {
+        water: report.water,
+        humidity: report.humidity,
+        soil: report.soil,
+        sunlight: report.sunlight,
+      } : null;
+      const result = await fetchDiagnosis(speciesName, pickedSymptom, care);
       const patch = {
         symptom: pickedSymptom,
         symptom_source: 'user',
@@ -251,6 +282,58 @@ export default function ReportScreen({ navigation, route }) {
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
+  }
+
+  function handleTilePress(tileKey) {
+    if (Platform.OS === 'android') {
+      UIManager.setLayoutAnimationEnabledExperimental?.(true);
+    }
+    LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity'));
+    setExpandedTile((prev) => (prev === tileKey ? null : tileKey));
+  }
+
+  async function handleScheduleWater() {
+    if (!report.water || fetchingInterval) return;
+    setFetchingInterval(true);
+    try {
+      const { intervalDays, label } = await fetchWaterInterval(report.water);
+      setScheduleConfirm({ visible: true, intervalDays, label });
+    } catch (e) {
+      Alert.alert('Could not fetch interval', e.message || 'Please try again.');
+    } finally {
+      setFetchingInterval(false);
+    }
+  }
+
+  async function handleConfirmSchedule() {
+    if (!currentReport?.id) return;
+    setSchedulingWater(true);
+    try {
+      const newSchedule = { ...(currentReport.schedule ?? {}), water: scheduleConfirm.intervalDays };
+      const updated = await updateHistory(currentReport.id, { schedule: newSchedule });
+      setCurrentReport(updated ?? { ...currentReport, schedule: newSchedule });
+      setScheduleConfirm({ visible: false, intervalDays: 7, label: '' });
+      showToast();
+    } catch (e) {
+      Alert.alert('Failed to save schedule', e.message || 'Please try again.');
+    } finally {
+      setSchedulingWater(false);
+    }
+  }
+
+  function showToast() {
+    setToastVisible(true);
+    Animated.sequence([
+      Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => setToastVisible(false));
+  }
+
+  function nextDueDateLabel(intervalDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + intervalDays);
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   }
 
   return (
@@ -475,6 +558,9 @@ export default function ReportScreen({ navigation, route }) {
               <Text style={styles.diagnosisFooterText}>Symptom: {report.symptom}</Text>
               <Text style={styles.diagnosisFooterText}>Re-scan in 7 days →</Text>
             </View>
+            <Text style={styles.diagnosisFooterNote}>
+              Symptom-specific advice · may differ from baseline care guide
+            </Text>
           </View>
         )}
 
@@ -483,9 +569,19 @@ export default function ReportScreen({ navigation, route }) {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Care guide</Text>
             <View style={styles.careGrid}>
-              {CARE_TILES.map((tile) => (
-                <CareTile key={tile.label} {...tile} />
-              ))}
+              {CARE_TILES.map((tile) => {
+                const isExpanded = expandedTile === tile.tileKey;
+                return (
+                  <CareTile
+                    key={tile.label}
+                    {...tile}
+                    expanded={isExpanded}
+                    onPress={() => handleTilePress(tile.tileKey)}
+                    onSchedule={tile.tileKey === 'water' && currentReport?.id ? handleScheduleWater : null}
+                    hasSchedule={!!(currentReport?.schedule?.water)}
+                  />
+                );
+              })}
             </View>
 
             {report.placement && (
@@ -541,6 +637,57 @@ export default function ReportScreen({ navigation, route }) {
           </Pressable>
         )}
       </ScrollView>
+
+      {/* ── Schedule confirmation modal ───────────────────────────── */}
+      <Modal
+        visible={scheduleConfirm.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setScheduleConfirm((s) => ({ ...s, visible: false }))}
+      >
+        <View style={styles.modalWrapper}>
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setScheduleConfirm((s) => ({ ...s, visible: false }))}
+          />
+          <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Schedule watering?</Text>
+          <Text style={styles.modalPlant}>
+            {report.common_name || report.species}
+          </Text>
+          <Text style={styles.modalInterval}>
+            {scheduleConfirm.label || `Every ${scheduleConfirm.intervalDays} days`}
+          </Text>
+          <Text style={styles.modalNext}>
+            Next due: {nextDueDateLabel(scheduleConfirm.intervalDays)}
+          </Text>
+          <View style={styles.modalBtns}>
+            <Pressable
+              onPress={() => setScheduleConfirm((s) => ({ ...s, visible: false }))}
+              style={({ pressed }) => [styles.modalCancelBtn, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleConfirmSchedule}
+              disabled={schedulingWater}
+              style={({ pressed }) => [styles.modalConfirmBtn, pressed && { opacity: 0.85 }, schedulingWater && { opacity: 0.6 }]}
+            >
+              <Text style={styles.modalConfirmText}>
+                {schedulingWater ? 'Saving…' : 'Confirm'}
+              </Text>
+            </Pressable>
+          </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Toast ────────────────────────────────────────────────── */}
+      {toastVisible && (
+        <Animated.View style={[styles.toast, { opacity: toastAnim }]} pointerEvents="none">
+          <Text style={styles.toastText}>Watering scheduled</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -792,10 +939,143 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     opacity: 0.8,
   },
+  diagnosisFooterNote: {
+    fontFamily: fonts.mono,
+    fontSize: 9,
+    color: colors.amberDeep,
+    opacity: 0.45,
+    letterSpacing: 0.3,
+    marginTop: 10,
+    textAlign: 'center',
+  },
 
   // ── Care guide
   section: {
     marginBottom: 24,
+  },
+  careTileExpanded: {
+    width: '100%',
+  },
+  scheduleWaterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
+  scheduleWaterBtnText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 12.5,
+    color: colors.pine,
+  },
+
+  // ── Schedule confirmation modal
+  modalWrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(14,26,18,0.55)',
+  },
+  modalCard: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.bgRaise,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    shadowColor: '#0F1A12',
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 10,
+  },
+  modalTitle: {
+    fontFamily: fonts.serifItalic,
+    fontStyle: 'italic',
+    fontSize: 22,
+    color: colors.text,
+    letterSpacing: -0.2,
+    marginBottom: 16,
+  },
+  modalPlant: {
+    fontFamily: fonts.sansBold,
+    fontSize: 13,
+    color: colors.textSoft,
+    marginBottom: 4,
+  },
+  modalInterval: {
+    fontFamily: fonts.serif,
+    fontSize: 26,
+    lineHeight: 30,
+    color: colors.text,
+    letterSpacing: -0.3,
+    marginBottom: 6,
+  },
+  modalNext: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.textMute,
+    marginBottom: 24,
+  },
+  modalBtns: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg,
+  },
+  modalCancelText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 14,
+    color: colors.textSoft,
+  },
+  modalConfirmBtn: {
+    flex: 2,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: colors.pine,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 14,
+    color: '#fff',
+    letterSpacing: 0.2,
+  },
+
+  // ── Toast
+  toast: {
+    position: 'absolute',
+    bottom: 48,
+    alignSelf: 'center',
+    backgroundColor: colors.forest,
+    borderRadius: 100,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 6,
+  },
+  toastText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 13,
+    color: '#F4F1E8',
+    letterSpacing: 0.2,
   },
   sectionLabel: {
     fontFamily: fonts.mono,

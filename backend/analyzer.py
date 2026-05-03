@@ -152,17 +152,69 @@ async def get_care_for_species(species: str, home_environment: dict | None = Non
     return {**care, "source": "claude"}
 
 
-async def diagnose_text(species: str, symptom: str) -> dict:
+async def parse_water_interval(water_text: str) -> dict:
+    """Return { intervalDays: int, label: str } for a plain-text watering description."""
+    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
+    msg = await client.messages.create(
+        model=CLAUDE_MODEL,
+        max_tokens=80,
+        messages=[{
+            "role": "user",
+            "content": (
+                f'A plant care guide says: "{water_text}"\n'
+                "How many days between waterings? Respond with valid JSON only (no extra text):\n"
+                '{"intervalDays": <integer>, "label": "<short human label e.g. Every 7 days>"}'
+            ),
+        }],
+    )
+    text = msg.content[0].text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+    return {"intervalDays": 7, "label": "Every 7 days"}
+
+
+async def diagnose_text(species: str, symptom: str, care: dict | None = None) -> dict:
     """Return a text-only Claude diagnosis for a species + symptom."""
     client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
+
+    care_lines = []
+    if care:
+        if care.get("water"):
+            care_lines.append(f"- Water: {care['water']}")
+        if care.get("humidity"):
+            care_lines.append(f"- Humidity: {care['humidity']}")
+        if care.get("soil"):
+            care_lines.append(f"- Soil: {care['soil']}")
+        if care.get("sunlight"):
+            care_lines.append(f"- Sunlight: {care['sunlight']}")
+
+    care_context = (
+        f"Baseline care for this plant:\n" + "\n".join(care_lines) + "\n\n"
+        if care_lines else ""
+    )
+    conflict_note = (
+        "If your advice conflicts with the baseline (e.g. recommending misting for a "
+        "low-humidity plant), briefly acknowledge why the symptom warrants it. "
+        if care_lines else ""
+    )
+
     msg = await client.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=300,
         messages=[{
             "role": "user",
             "content": (
+                f"{care_context}"
                 f"A {species} is showing: {symptom}. "
                 "Give a short, actionable plant health diagnosis. "
+                f"{conflict_note}"
                 "Respond with valid JSON only (no extra text):\n"
                 '{"title": "short cause title (e.g. Likely overwatered)", '
                 '"body": "2-3 sentences explaining the likely cause and specific remedy"}'

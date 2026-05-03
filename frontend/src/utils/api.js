@@ -50,10 +50,27 @@ export async function fetchCare(species, homeEnvironment = null) {
   return response.json();
 }
 
-export async function fetchDiagnosis(species, symptom) {
+export async function fetchWaterInterval(waterText) {
+  const formData = new FormData();
+  formData.append("water_text", waterText);
+  const response = await fetch(`${API_BASE_URL}/parse-interval`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `Server error ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchDiagnosis(species, symptom, care = null) {
   const formData = new FormData();
   formData.append("species", species);
   formData.append("symptom", symptom);
+  if (care) {
+    formData.append("care_data", JSON.stringify(care));
+  }
   const response = await fetch(`${API_BASE_URL}/diagnose`, {
     method: "POST",
     body: formData,

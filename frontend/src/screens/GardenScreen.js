@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 
 import { colors, fonts, radii } from '../utils/theme';
 import { getHistory, updateHistory } from '../utils/history';
+import { fetchWaterInterval } from '../utils/api';
 import { logActivity } from '../utils/activity';
 import * as Ico from '../components/Ico';
 
@@ -83,13 +84,6 @@ function taskDueLabel(label, diffDays, dueDate) {
   return `${label} ${dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
 }
 
-function deriveWaterInterval(waterText) {
-  const t = (waterText ?? '').toLowerCase();
-  if (t.includes('2 week') || t.includes('fortnight')) return 14;
-  if (t.includes('week')) return 7;
-  return 3;
-}
-
 // ─── Task types ───────────────────────────────────────────────
 const TASK_TYPES = [
   { key: 'water',      label: 'Water',       color: colors.pine   },
@@ -117,20 +111,21 @@ function buildTasksFromHistory(history) {
 
   history.forEach((plant) => {
     const sched = plant.schedule ?? {};
-    const lastCare = plant.timestamp ? new Date(plant.timestamp) : new Date();
-    lastCare.setHours(0, 0, 0, 0);
+    const lastCareMap = plant.lastCare ?? {};
 
     TASK_TYPES.forEach(({ key, label, color }) => {
-      let intervalDays;
-      if (key === 'water') {
-        intervalDays = sched.water ?? deriveWaterInterval(plant.water);
-      } else {
-        intervalDays = sched[key] ?? null;
-      }
+      const intervalDays = sched[key] ?? null;
       if (!intervalDays) return;
 
-      const dueDate = new Date(lastCare);
-      dueDate.setDate(lastCare.getDate() + intervalDays);
+      // Use per-task last-care date if available; fall back to plant creation date
+      const anchorStr = lastCareMap[key] ?? null;
+      const anchor = anchorStr
+        ? new Date(anchorStr)
+        : (plant.timestamp ? new Date(plant.timestamp) : new Date());
+      anchor.setHours(0, 0, 0, 0);
+
+      const dueDate = new Date(anchor);
+      dueDate.setDate(anchor.getDate() + intervalDays);
       dueDate.setHours(0, 0, 0, 0);
 
       const diffDays = Math.round((dueDate - today) / 86400000);
@@ -226,31 +221,45 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
 
   const [selPlant, setSelPlant] = useState(null);
   const [sched, setSched] = useState({ water: 7, wipeLeaves: null, fertilise: null, rotate: null });
+  const [loadingInterval, setLoadingInterval] = useState(false);
+
+  async function loadWaterSuggestion(p) {
+    if (!p?.water || p.schedule?.water) return;
+    setLoadingInterval(true);
+    try {
+      const { intervalDays } = await fetchWaterInterval(p.water);
+      setSched((s) => ({ ...s, water: intervalDays }));
+    } catch {}
+    setLoadingInterval(false);
+  }
 
   React.useEffect(() => {
     if (!visible) return;
     if (plant) {
       setSelPlant(plant);
       setSched({
-        water:      plant.schedule?.water      ?? deriveWaterInterval(plant.water),
+        water:      plant.schedule?.water      ?? 7,
         wipeLeaves: plant.schedule?.wipeLeaves ?? null,
         fertilise:  plant.schedule?.fertilise  ?? null,
         rotate:     plant.schedule?.rotate     ?? null,
       });
+      loadWaterSuggestion(plant);
     } else {
       setSelPlant(null);
       setSched({ water: 7, wipeLeaves: null, fertilise: null, rotate: null });
+      setLoadingInterval(false);
     }
   }, [visible, plant]);
 
   function pickPlant(p) {
     setSelPlant(p);
     setSched({
-      water:      p.schedule?.water      ?? deriveWaterInterval(p.water),
+      water:      p.schedule?.water      ?? 7,
       wipeLeaves: p.schedule?.wipeLeaves ?? null,
       fertilise:  p.schedule?.fertilise  ?? null,
       rotate:     p.schedule?.rotate     ?? null,
     });
+    loadWaterSuggestion(p);
   }
 
   function handleSave() {
@@ -305,19 +314,23 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
               </View>
               <Text style={styles.taskTypeLabel}>Water every</Text>
             </View>
-            <View style={styles.intervalRow}>
-              {INTERVAL_OPTIONS.map((n) => {
-                const active = sched.water === n;
-                return (
-                  <Pressable key={n} onPress={() => setSched((s) => ({ ...s, water: n }))}
-                    style={[styles.intervalChip, active && styles.intervalChipActive]}>
-                    <Text style={[styles.intervalChipText, active && styles.intervalChipTextActive]}>
-                      {n} days
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {loadingInterval ? (
+              <Text style={styles.intervalLoading}>Calculating suggestion…</Text>
+            ) : (
+              <View style={styles.intervalRow}>
+                {INTERVAL_OPTIONS.map((n) => {
+                  const active = sched.water === n;
+                  return (
+                    <Pressable key={n} onPress={() => setSched((s) => ({ ...s, water: n }))}
+                      style={[styles.intervalChip, active && styles.intervalChipActive]}>
+                      <Text style={[styles.intervalChipText, active && styles.intervalChipTextActive]}>
+                        {n} days
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* Extra task types */}
@@ -385,7 +398,28 @@ export default function GardenScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      getHistory().then((h) => { setHistory(h); setTasks(buildTasksFromHistory(h)); });
+      async function load() {
+        const h = await getHistory();
+        setHistory(h);
+        setTasks(buildTasksFromHistory(h));
+        // Auto-schedule water interval for existing plants that have care text but no schedule yet
+        const unscheduled = h.filter((p) => p.water && !p.schedule?.water);
+        if (unscheduled.length > 0) {
+          Promise.all(
+            unscheduled.map(async (p) => {
+              try {
+                const { intervalDays } = await fetchWaterInterval(p.water);
+                await updateHistory(p.id, { schedule: { ...(p.schedule ?? {}), water: intervalDays } });
+              } catch {}
+            })
+          ).then(async () => {
+            const fresh = await getHistory();
+            setHistory(fresh);
+            setTasks(buildTasksFromHistory(fresh));
+          });
+        }
+      }
+      load();
     }, [])
   );
 
@@ -411,7 +445,16 @@ export default function GardenScreen({ navigation }) {
     });
     if (isMarking) {
       const task = tasks.find((t) => t.id === id);
-      if (task) logActivity({ plantId: task.plantId, type: task.taskKey });
+      if (task) {
+        logActivity({ plantId: task.plantId, type: task.taskKey });
+        // Persist last care date so the due date anchor advances
+        const todayStr = new Date().toISOString().split('T')[0];
+        const newLastCare = { ...(task.plant.lastCare ?? {}), [task.taskKey]: todayStr };
+        await updateHistory(task.plantId, { lastCare: newLastCare });
+        const fresh = await getHistory();
+        setHistory(fresh);
+        setTasks(buildTasksFromHistory(fresh));
+      }
     }
   }
 
@@ -806,6 +849,7 @@ const styles = StyleSheet.create({
   toggleThumbOn: { backgroundColor: colors.pine, alignSelf: 'flex-end' },
 
   // Interval chips
+  intervalLoading: { fontFamily: fonts.sans, fontSize: 12, color: colors.textMute, paddingVertical: 10 },
   intervalRow: { flexDirection: 'row', gap: 8 },
   intervalChip: { flex: 1, height: 38, borderRadius: radii.lg, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
   intervalChipActive: { backgroundColor: colors.bgMint, borderColor: 'rgba(92,138,92,0.5)' },
