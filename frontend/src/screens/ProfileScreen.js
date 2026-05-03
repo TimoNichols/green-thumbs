@@ -13,14 +13,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fonts, radii } from '../utils/theme';
 import { getHistory } from '../utils/history';
+import { getActivity } from '../utils/activity';
 import * as Ico from '../components/Ico';
+import HomeEnvironmentCard from '../components/HomeEnvironmentCard';
+import { useAuth } from '../context/AuthContext';
 
-// ── Stats + achievement unlock computation ────────────────────
-function computeStats(history) {
+// ── Achievement unlock computation ────────────────────────────
+function computeAchievements(history) {
   const total = history.length;
   const speciesSet = new Set(history.map((i) => i.species).filter(Boolean));
-  const healthy = history.filter((i) => !i.symptom).length;
-  const healthyPct = total > 0 ? Math.round((healthy / total) * 100) : 0;
 
   let spanDays = 0;
   if (history.length >= 2) {
@@ -29,16 +30,65 @@ function computeStats(history) {
   }
 
   return {
-    total,
-    species: speciesSet.size,
-    healthyPct,
-    unlocked: {
-      first_scan: total >= 1,
-      five_plants: total >= 5,
-      weekly:      spanDays >= 7,
-      explorer:    speciesSet.size >= 3,
-    },
+    first_scan: total >= 1,
+    five_plants: total >= 5,
+    weekly:      spanDays >= 7,
+    explorer:    speciesSet.size >= 3,
   };
+}
+
+// ── Care engagement stats ─────────────────────────────────────
+function computeEngagementStats(history, activity) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Merge history scans + logged care activities into a flat event list
+  const allEvents = [
+    ...history.map((h) => ({ id: h.id, ts: new Date(h.timestamp) })),
+    ...activity.map((a) => ({ id: a.plantId, ts: new Date(a.timestamp) })),
+  ];
+
+  // Last Check — days since most recent event
+  let lastCheck = '—';
+  if (allEvents.length > 0) {
+    const latestMs = Math.max(...allEvents.map((e) => e.ts.getTime()));
+    const latestDay = new Date(latestMs);
+    latestDay.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today.getTime() - latestDay.getTime()) / 86400000);
+    lastCheck = diffDays === 0 ? 'Today' : `${diffDays}d`;
+  }
+
+  // Care Streak — consecutive days with any activity ending today or yesterday
+  const activityDays = new Set(
+    allEvents.map((e) => {
+      const d = new Date(e.ts);
+      d.setHours(0, 0, 0, 0);
+      return d.toDateString();
+    })
+  );
+
+  const cursor = new Date(today);
+  if (!activityDays.has(cursor.toDateString())) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  let streak = 0;
+  while (activityDays.has(cursor.toDateString())) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  // This Week — unique plants with any activity Mon–today
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+
+  const thisWeekIds = new Set();
+  allEvents.forEach((e) => {
+    const d = new Date(e.ts);
+    d.setHours(0, 0, 0, 0);
+    if (d >= weekStart && d <= today && e.id) thisWeekIds.add(e.id);
+  });
+
+  return { streak, thisWeek: thisWeekIds.size, lastCheck };
 }
 
 const ACHIEVEMENTS = [
@@ -106,12 +156,17 @@ function SettingsRow({ icon: Icon, label, danger, toggle, toggleValue, onToggleC
 // ── Screen ────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const [stats, setStats] = useState({ total: 0, species: 0, healthyPct: 0, unlocked: {} });
+  const { user, signOut } = useAuth();
+  const [unlocked, setUnlocked] = useState({});
+  const [engagement, setEngagement] = useState({ streak: 0, thisWeek: 0, lastCheck: '—' });
   const [notificationsOn, setNotificationsOn] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      getHistory().then((h) => setStats(computeStats(h)));
+      Promise.all([getHistory(), getActivity()]).then(([h, a]) => {
+        setUnlocked(computeAchievements(h));
+        setEngagement(computeEngagementStats(h, a));
+      });
     }, [])
   );
 
@@ -141,16 +196,19 @@ export default function ProfileScreen() {
         <View style={styles.avatar}>
           <Text style={styles.avatarInitials}>GT</Text>
         </View>
-        <Text style={styles.avatarName}>Plant Parent</Text>
-        <Text style={styles.avatarSub}>Tracking your garden</Text>
+        <Text style={styles.avatarName}>{user?.email?.split('@')[0] ?? 'Plant Parent'}</Text>
+        <Text style={styles.avatarSub}>{user?.email ?? 'Tracking your garden'}</Text>
       </View>
 
       {/* ── Stats row ──────────────────────────────────── */}
       <View style={styles.statsRow}>
-        <StatCard value={String(stats.total)} label="SCANS" />
-        <StatCard value={String(stats.species)} label="PLANTS" />
-        <StatCard value={`${stats.healthyPct}%`} label="HEALTHY" />
+        <StatCard value={engagement.streak > 0 ? String(engagement.streak) : '—'} label="STREAK" />
+        <StatCard value={String(engagement.thisWeek)} label="THIS WEEK" />
+        <StatCard value={engagement.lastCheck} label="LAST CHECK" />
       </View>
+
+      {/* ── Home Environment ───────────────────────────── */}
+      <HomeEnvironmentCard />
 
       {/* ── Achievements ───────────────────────────────── */}
       <Text style={styles.sectionLabel}>Achievements</Text>
@@ -164,7 +222,7 @@ export default function ProfileScreen() {
             key={a.id}
             label={a.label}
             Icon={a.Icon}
-            unlocked={!!stats.unlocked[a.id]}
+            unlocked={!!unlocked[a.id]}
           />
         ))}
       </ScrollView>
@@ -202,7 +260,7 @@ export default function ProfileScreen() {
           danger
           label="Sign out"
           showBorder
-          onPress={comingSoon}
+          onPress={signOut}
         />
       </View>
 

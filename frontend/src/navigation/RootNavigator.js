@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radii, shadows, fonts, gradients } from '../utils/theme';
 import * as Ico from '../components/Ico';
+import { useAuth } from '../context/AuthContext';
+import NoConnectionScreen from '../components/NoConnectionScreen';
 
 import HomeScreen from '../screens/HomeScreen';
 import MyPlantsScreen from '../screens/MyPlantsScreen';
@@ -16,12 +18,13 @@ import ProfileScreen from '../screens/ProfileScreen';
 import CameraScreen from '../screens/CameraScreen';
 import AnalyzingScreen from '../screens/AnalyzingScreen';
 import ReportScreen from '../screens/ReportScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
 
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Stack    = createNativeStackNavigator();
+const Tab      = createBottomTabNavigator();
+const AuthStack = createNativeStackNavigator();
 
-// Occupies the center slot in the tab list so the layout math is right.
-// The CustomTabBar intercepts its press and routes to the Camera modal instead.
 function ScanPlaceholder() {
   return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
 }
@@ -37,13 +40,11 @@ const TAB_CONFIG = [
 // ─── Custom tab bar ───────────────────────────────────────────
 function CustomTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
-  // Sit at least 24px above the home indicator, or more if the safe area is taller
   const bottomMargin = Math.max(24, insets.bottom + 6);
   const activeRoute = state.routes[state.index].name;
 
   const handlePress = (name, index) => {
     if (name === 'Scan') {
-      // Scan lives in the parent Stack — bubble up to reach it
       navigation.getParent()?.navigate('Camera');
       return;
     }
@@ -58,16 +59,12 @@ function CustomTabBar({ state, navigation }) {
   };
 
   return (
-    // box-none lets touches fall through the transparent wrapper to content below
     <View style={styles.wrapper} pointerEvents="box-none">
-      {/* Gradient fades scroll content into the cream bg — not interactive */}
       <LinearGradient
         colors={gradients.cream}
         style={styles.fade}
         pointerEvents="none"
       />
-
-      {/* Shadow carrier — no overflow:hidden so the shadow renders on iOS */}
       <View
         style={[
           styles.shadowCarrier,
@@ -75,7 +72,6 @@ function CustomTabBar({ state, navigation }) {
           Platform.OS === 'android' && styles.shadowCarrierAndroid,
         ]}
       >
-        {/* BlurView clips content to the pill shape */}
         <BlurView intensity={20} tint="light" style={styles.blur}>
           <View style={styles.inner}>
             {TAB_CONFIG.map((tab, index) => {
@@ -131,13 +127,36 @@ function TabNavigator() {
   );
 }
 
-// ─── Root stack ───────────────────────────────────────────────
-// Camera and Analyzing are fullScreenModals — tab bar is not visible.
-// Report uses a card slide so it feels like a "result arriving", not a modal.
-// From MyPlants: navigation.navigate('Report', { report }) — bubbles up here.
-// From Analyzing: navigation.replace('Report', { report }) — replaces Analyzing so
-//   the back gesture skips the loading screen and returns straight to the tabs.
+// ─── Auth navigator ───────────────────────────────────────────
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login"    component={LoginScreen}    />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+// ─── Root navigator ───────────────────────────────────────────
 export default function RootNavigator() {
+  const { user, loading, netError, retryConnection } = useAuth();
+
+  if (netError) {
+    return <NoConnectionScreen onRetry={retryConnection} />;
+  }
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.pine} />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <AuthNavigator />;
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={TabNavigator} />
@@ -151,7 +170,7 @@ export default function RootNavigator() {
         component={AnalyzingScreen}
         options={{
           presentation: 'fullScreenModal',
-          gestureEnabled: false, // no accidental swipe-down mid-analysis
+          gestureEnabled: false,
           animation: 'fade',
         }}
       />
@@ -182,13 +201,11 @@ const styles = StyleSheet.create({
   shadowCarrier: {
     marginHorizontal: 12,
     borderRadius: radii['3xl'],
-    // iOS drop shadow
     shadowColor: shadows.bar.shadowColor,
     shadowOpacity: shadows.bar.shadowOpacity,
     shadowRadius: shadows.bar.shadowRadius,
     shadowOffset: shadows.bar.shadowOffset,
   },
-  // Android needs a background on the elevation carrier for the shadow to render
   shadowCarrierAndroid: {
     elevation: shadows.bar.elevation,
     backgroundColor: 'rgba(255,255,255,0.92)',
@@ -212,7 +229,6 @@ const styles = StyleSheet.create({
   scanWrap: {
     marginTop: -16,
     borderRadius: radii.pill,
-    // Scan button has its own lift
     shadowColor: '#2E5238',
     shadowOpacity: 0.35,
     shadowRadius: 7,

@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 
 import { colors, fonts, radii } from '../utils/theme';
 import { getHistory, updateHistory } from '../utils/history';
+import { logActivity } from '../utils/activity';
 import * as Ico from '../components/Ico';
 
 // ─── Constants ────────────────────────────────────────────────
@@ -402,11 +403,16 @@ export default function GardenScreen({ navigation }) {
 
   async function handleToggle(id) {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const isMarking = !completed.has(id);
     setCompleted((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+    if (isMarking) {
+      const task = tasks.find((t) => t.id === id);
+      if (task) logActivity({ plantId: task.plantId, type: task.taskKey });
+    }
   }
 
   async function handleSaveSchedule(plantId, schedule) {

@@ -14,11 +14,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect as SR } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 
 import { colors, fonts, radii } from '../utils/theme';
 import * as Ico from '../components/Ico';
-import { addToHistory, updateHistory, getHistory } from '../utils/history';
+import { addToHistory, updateHistory, getHistory, uploadPlantPhoto } from '../utils/history';
 import { fetchDiagnosis } from '../utils/api';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -186,27 +185,17 @@ export default function ReportScreen({ navigation, route }) {
 
   const diffColors = diffPillColors(report.difficulty);
 
-  const handleSave = () => {
-    if (!report.id) addToHistory(report);
+  async function handleSave() {
+    if (!report.id) await addToHistory(report);
     navigation.navigate('MainTabs');
-  };
+  }
 
   async function persistPhoto(uri) {
-    let permanentUri = uri;
-    try {
-      const dir = FileSystem.documentDirectory + 'plants/';
-      const info = await FileSystem.getInfoAsync(dir);
-      if (!info.exists) {
-        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-      }
-      permanentUri = `${dir}${Date.now()}.jpg`;
-      await FileSystem.copyAsync({ from: uri, to: permanentUri });
-    } catch {
-      permanentUri = uri;
-    }
-    setCurrentPhotoUri(permanentUri);
+    const storageUrl = await uploadPlantPhoto(uri);
+    const finalUri = storageUrl ?? uri;
+    setCurrentPhotoUri(finalUri);
     if (report.id) {
-      await updateHistory(report.id, { photoUri: permanentUri });
+      await updateHistory(report.id, { photoUri: finalUri });
     }
   }
 

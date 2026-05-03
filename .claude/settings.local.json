@@ -7,7 +7,14 @@
       "Bash(Test-Path *)",
       "Bash(xargs grep *)",
       "PowerShell(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\" | Select-Object Name, @{N=\"Type\";E={if\\($_.PSIsContainer\\){\"Folder\"}else{\"File\"}}})",
-      "PowerShell(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\\\\frontend\" -Directory | Where-Object { $_.Name -ne \"node_modules\" } | ForEach-Object { $_.Name })"
+      "PowerShell(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\\\\frontend\" -Directory | Where-Object { $_.Name -ne \"node_modules\" } | ForEach-Object { $_.Name })",
+      "Bash(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(package\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(npm install *)"
     ]
   }
 }

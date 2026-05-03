@@ -1,3 +1,4 @@
+import json
 import os
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,10 +52,19 @@ async def analyze(
 
 
 @app.post("/care")
-async def care(species: str = Form(...)):
+async def care(
+    species: str = Form(...),
+    home_environment: str | None = Form(None),
+):
     if not species.strip():
         raise HTTPException(status_code=400, detail="species is required")
-    return await get_care_for_species(species.strip())
+    env = None
+    if home_environment:
+        try:
+            env = json.loads(home_environment)
+        except (json.JSONDecodeError, ValueError):
+            env = None
+    return await get_care_for_species(species.strip(), env)
 
 
 @app.post("/diagnose")

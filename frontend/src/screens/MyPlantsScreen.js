@@ -28,6 +28,7 @@ import { colors, fonts, radii } from '../utils/theme';
 import { getHistory, deleteFromHistory, addToHistory } from '../utils/history';
 import { getWishlist, addToWishlist, deleteFromWishlist } from '../utils/wishlist';
 import { fetchCare } from '../utils/api';
+import { getHomeEnvironment } from '../utils/homeEnvironment';
 import { PlantPlaceholder } from './HomeScreen';
 import * as Ico from '../components/Ico';
 
@@ -210,7 +211,9 @@ function AddManuallySheet({ visible, tab, onClose, onSave }) {
     setCareLoading(true);
     setCarePreview(null);
     try {
-      const data = await fetchCare(s);
+      const homeEnv = await getHomeEnvironment();
+      const env = (homeEnv.humidity || homeEnv.light || homeEnv.temperature) ? homeEnv : null;
+      const data = await fetchCare(s, env);
       setCarePreview(data);
       if (data.common_name && !name.trim()) setName(data.common_name);
     } catch (e) {

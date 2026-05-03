@@ -255,3 +255,12 @@ export function Star({ color = '#1F3A28', size = 20 }) {
     </W>
   );
 }
+
+export function Thermometer({ color = '#1F3A28', size = 22 }) {
+  return (
+    <W size={size} color={color}>
+      <Path d="M10 14V4a2 2 0 014 0v10" />
+      <Circle cx={12} cy={17} r={3} />
+    </W>
+  );
+}

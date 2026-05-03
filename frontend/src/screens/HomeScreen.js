@@ -116,9 +116,9 @@ export default function HomeScreen({ navigation }) {
     }, [])
   );
 
-  const scanCount = history.length;
-  const healthyCount = history.filter((h) => !h.symptom).length;
-  const healthyPct = scanCount > 0 ? Math.round((healthyCount / scanCount) * 100) : 0;
+  const myPlants = history.length;
+  const needsAttention = history.filter((h) => h.symptom && h.symptom !== 'None').length;
+  const thriving = history.filter((h) => !h.symptom || h.symptom === 'None').length;
   const recent = history.slice(0, 5);
   const upNext = recent[0] ?? null;
 
@@ -182,22 +182,22 @@ export default function HomeScreen({ navigation }) {
         {/* ── Stats ──────────────────────────────────────── */}
         <View style={styles.statsRow}>
           <StatTile
-            value={String(scanCount)}
-            label="PLANTS"
+            value={String(myPlants)}
+            label="MY PLANTS"
             bg={colors.bgMint}
             fg={colors.pine}
           />
           <StatTile
-            value={String(scanCount)}
-            label="SCANS"
-            bg={colors.bgSage}
-            fg={colors.pine}
+            value={myPlants > 0 ? String(needsAttention) : '—'}
+            label="ATTENTION"
+            bg={needsAttention > 0 ? colors.amberSoft : colors.bgSage}
+            fg={needsAttention > 0 ? colors.amberDeep : colors.pine}
           />
           <StatTile
-            value={scanCount > 0 ? `${healthyPct}%` : '—'}
-            label="HEALTHY"
-            bg={scanCount > 0 && healthyPct < 80 ? colors.amberSoft : colors.bgMint}
-            fg={scanCount > 0 && healthyPct < 80 ? colors.amberDeep : colors.pine}
+            value={myPlants > 0 ? String(thriving) : '—'}
+            label="THRIVING"
+            bg={colors.bgMint}
+            fg={colors.pine}
           />
         </View>
 

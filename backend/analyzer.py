@@ -100,8 +100,23 @@ def _care_from_cache(species: str) -> dict | None:
     return _plant_cache.get(species.lower())
 
 
-async def _care_from_claude(species: str) -> dict:
+async def _care_from_claude(species: str, home_environment: dict | None = None) -> dict:
     client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
+
+    env_parts = []
+    if home_environment:
+        if home_environment.get("humidity"):
+            env_parts.append(f"humidity: {home_environment['humidity'].replace('_', ' ')}")
+        if home_environment.get("light"):
+            env_parts.append(f"light level: {home_environment['light']}")
+        if home_environment.get("temperature"):
+            env_parts.append(f"temperature: {home_environment['temperature']}")
+
+    env_context = (
+        f"\n\nHome environment — {', '.join(env_parts)}. "
+        "Tailor water frequency, sunlight, humidity, and placement advice to suit these conditions."
+        if env_parts else ""
+    )
 
     msg = await client.messages.create(
         model=CLAUDE_MODEL,
@@ -113,6 +128,7 @@ async def _care_from_claude(species: str) -> dict:
                 '{"species": "...", "common_name": "...", "water": "...", "sunlight": "...", '
                 '"soil": "...", "humidity": "...", "placement": "...", '
                 '"health_tips": ["tip1", "tip2", "tip3"], "difficulty": "easy|moderate|hard"}'
+                f"{env_context}"
             ),
         }],
     )
@@ -127,12 +143,12 @@ async def _care_from_claude(species: str) -> dict:
         raise ValueError(f"Could not parse care data for {species}")
 
 
-async def get_care_for_species(species: str) -> dict:
+async def get_care_for_species(species: str, home_environment: dict | None = None) -> dict:
     """Return care data for a named species without an image."""
     cached = _care_from_cache(species)
     if cached:
         return {**cached, "source": "cache"}
-    care = await _care_from_claude(species)
+    care = await _care_from_claude(species, home_environment)
     return {**care, "source": "claude"}
 
 

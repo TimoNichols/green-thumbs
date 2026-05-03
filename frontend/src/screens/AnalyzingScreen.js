@@ -10,11 +10,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import * as FileSystem from 'expo-file-system';
-
 import { colors, fonts } from '../utils/theme';
 import { analyzeImage } from '../utils/api';
-import { addToHistory, updateHistory } from '../utils/history';
+import { addToHistory, updateHistory, uploadPlantPhoto } from '../utils/history';
 import { PlantPlaceholder } from './HomeScreen';
 import * as Ico from '../components/Ico';
 
@@ -32,14 +30,13 @@ export default function AnalyzingScreen({ navigation, route }) {
   const [step, setStep] = useState(initialStep);
   const [report, setReport] = useState(null);
 
-  // Per-row opacity (idle = 0.35, active/done = 1)
   const rowOpacities = useRef(
     STEPS.map((_, i) => new Animated.Value(i <= initialStep ? 1 : 0.35))
   ).current;
 
-  const spinAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim     = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(initialStep / STEPS.length)).current;
-  const scanAnim = useRef(new Animated.Value(0)).current;
+  const scanAnim     = useRef(new Animated.Value(0)).current;
 
   // ── Spinner loop
   useEffect(() => {
@@ -99,46 +96,32 @@ export default function AnalyzingScreen({ navigation, route }) {
     }).start();
   }, [step]);
 
-  // ── API call — fires once on mount
+  // ── API call + photo upload — fires once on mount
   useEffect(() => {
-    analyzeImage(photoUri, mediaType, symptom, knownSpecies)
-      .then(async (data) => {
-        // Copy temp photo to a permanent path so it survives cache clears.
-        // Fall back to the temp URI if the copy fails (e.g. simulator quirks).
-        let permanentUri = null;
-        if (photoUri) {
-          try {
-            const dir = FileSystem.documentDirectory + 'plants/';
-            const info = await FileSystem.getInfoAsync(dir);
-            if (!info.exists) {
-              await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-            }
-            permanentUri = `${dir}${Date.now()}.jpg`;
-            await FileSystem.copyAsync({ from: photoUri, to: permanentUri });
-          } catch {
-            permanentUri = photoUri;
-          }
-        }
-        // Use data.symptom (backend-resolved: user chip or auto-detected) — do NOT
-        // re-spread the raw route-param `symptom`, which would overwrite auto-detections
-        // with the user's chip selection (often "None").
-        const reportWithPhoto = { ...data, photoUri: permanentUri };
-        let saved;
-        if (linkedPlantId) {
-          // Merge care data into the existing manual entry and clear the manual flag
-          saved = await updateHistory(linkedPlantId, { ...reportWithPhoto, source: null });
-        } else {
-          saved = await addToHistory(reportWithPhoto);
-        }
-        setReport(saved ?? reportWithPhoto);
-      })
-      .catch(err => {
-        Alert.alert(
-          'Analysis failed',
-          err.message || 'Something went wrong. Please try again.',
-          [{ text: 'Try again', onPress: () => navigation.replace('Camera') }],
-        );
-      });
+    const run = async () => {
+      // Run species analysis and photo upload in parallel
+      const [data, photoUrl] = await Promise.all([
+        analyzeImage(photoUri, mediaType, symptom, knownSpecies),
+        uploadPlantPhoto(photoUri),
+      ]);
+
+      const reportWithPhoto = { ...data, photoUri: photoUrl };
+      let saved;
+      if (linkedPlantId) {
+        saved = await updateHistory(linkedPlantId, { ...reportWithPhoto, source: null });
+      } else {
+        saved = await addToHistory(reportWithPhoto);
+      }
+      setReport(saved ?? reportWithPhoto);
+    };
+
+    run().catch(err => {
+      Alert.alert(
+        'Analysis failed',
+        err.message || 'Something went wrong. Please try again.',
+        [{ text: 'Try again', onPress: () => navigation.replace('Camera') }],
+      );
+    });
   }, []);
 
   // ── Navigate when animation AND API are both done
@@ -171,7 +154,6 @@ export default function AnalyzingScreen({ navigation, route }) {
 
   return (
     <View style={styles.root}>
-      {/* Soft mint wash from top */}
       <LinearGradient
         colors={[colors.bgMint, 'transparent']}
         start={{ x: 0.5, y: 0 }}
@@ -206,7 +188,7 @@ export default function AnalyzingScreen({ navigation, route }) {
         {/* Steps */}
         <View style={styles.stepsList}>
           {STEPS.map((s, i) => {
-            const done = i < step;
+            const done   = i < step;
             const active = i === step;
             return (
               <Animated.View
@@ -215,10 +197,10 @@ export default function AnalyzingScreen({ navigation, route }) {
               >
                 <View style={[
                   styles.stepIcon,
-                  done && styles.stepIconDone,
+                  done   && styles.stepIconDone,
                   active && styles.stepIconActive,
                 ]}>
-                  {done && <Ico.Check color={colors.leaf} size={14} />}
+                  {done   && <Ico.Check color={colors.leaf} size={14} />}
                   {active && (
                     <Animated.View style={[styles.spinner, { transform: [{ rotate: spin }] }]} />
                   )}
@@ -267,7 +249,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  // Plant image + scanline
   imageWrap: {
     alignSelf: 'center',
     marginBottom: 40,
@@ -289,7 +270,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  // Header
   header: {
     alignItems: 'center',
     marginBottom: 44,
@@ -314,7 +294,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // Steps
   stepsList: {
     gap: 4,
     marginBottom: 24,
@@ -380,7 +359,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
 
-  // Progress bar
   progressTrack: {
     height: 3,
     borderRadius: 2,
@@ -394,7 +372,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.leaf,
   },
 
-  // Footer
   footer: {
     marginTop: 'auto',
     alignItems: 'center',

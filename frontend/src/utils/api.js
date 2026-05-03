@@ -33,9 +33,12 @@ export async function analyzeImage(
   return response.json();
 }
 
-export async function fetchCare(species) {
+export async function fetchCare(species, homeEnvironment = null) {
   const formData = new FormData();
   formData.append("species", species);
+  if (homeEnvironment) {
+    formData.append("home_environment", JSON.stringify(homeEnvironment));
+  }
   const response = await fetch(`${API_BASE_URL}/care`, {
     method: "POST",
     body: formData,
