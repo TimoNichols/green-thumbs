@@ -14,7 +14,10 @@
       "Bash(package\")",
       "Bash(Get-ChildItem -Path \"D:\\\\GreenThumbsApp\\\\green-thumbs\" -Recurse -Directory)",
       "Bash(Select-Object FullName)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(git log *)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__execute_sql"
     ]
   }
 }

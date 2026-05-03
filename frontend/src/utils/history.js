@@ -1,78 +1,79 @@
-import { supabase } from '../lib/supabase';
+import * as FileSystem from "expo-file-system/legacy";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "../lib/supabase";
 
 // ─── Row ↔ app-shape mapping ──────────────────────────────────
 
 function fromRow(row) {
   return {
-    id:                  row.id,
-    timestamp:           row.created_at,
-    status:              row.status ?? 'owned',
-    photoUri:            row.photo_url ?? null,
-    species:             row.species ?? '',
-    common_name:         row.common_name ?? '',
-    confidence:          row.confidence ?? 1.0,
-    source:              row.source ?? 'manual',
-    water:               row.water ?? '',
-    sunlight:            row.sunlight ?? '',
-    soil:                row.soil ?? '',
-    humidity:            row.humidity ?? '',
-    placement:           row.placement ?? '',
-    health_tips:         row.health_tips ?? [],
-    difficulty:          row.difficulty ?? 'moderate',
-    symptom:             row.current_symptom ?? null,
-    symptom_source:      row.symptom_source ?? null,
+    id: row.id,
+    timestamp: row.created_at,
+    status: row.status ?? "owned",
+    photoUri: row.photo_url ?? null,
+    species: row.species ?? "",
+    common_name: row.common_name ?? "",
+    confidence: row.confidence ?? 1.0,
+    source: row.source ?? "manual",
+    water: row.water ?? "",
+    sunlight: row.sunlight ?? "",
+    soil: row.soil ?? "",
+    humidity: row.humidity ?? "",
+    placement: row.placement ?? "",
+    health_tips: row.health_tips ?? [],
+    difficulty: row.difficulty ?? "moderate",
+    symptom: row.current_symptom ?? null,
+    symptom_source: row.symptom_source ?? null,
     auto_symptom_detail: row.auto_symptom_detail ?? null,
-    text_diagnosis:      row.text_diagnosis ?? null,
-    schedule:            row.schedule ?? {},
-    notes:               row.notes ?? null,
+    text_diagnosis: row.text_diagnosis ?? null,
+    schedule: row.schedule ?? {},
+    notes: row.notes ?? null,
   };
 }
 
 function toRow(report) {
   return {
-    status:              report.status ?? 'owned',
-    species:             report.species ?? null,
-    common_name:         report.common_name ?? null,
-    photo_url:           report.photoUri ?? null,
-    confidence:          report.confidence ?? 1.0,
-    source:              report.source ?? 'manual',
-    water:               report.water ?? null,
-    sunlight:            report.sunlight ?? null,
-    soil:                report.soil ?? null,
-    humidity:            report.humidity ?? null,
-    placement:           report.placement ?? null,
-    health_tips:         report.health_tips ?? [],
-    difficulty:          report.difficulty ?? 'moderate',
-    current_symptom:     report.symptom ?? null,
-    symptom_source:      report.symptom_source ?? null,
+    status: report.status ?? "owned",
+    species: report.species ?? null,
+    common_name: report.common_name ?? null,
+    photo_url: report.photoUri ?? null,
+    confidence: report.confidence ?? 1.0,
+    source: report.source ?? "manual",
+    water: report.water ?? null,
+    sunlight: report.sunlight ?? null,
+    soil: report.soil ?? null,
+    humidity: report.humidity ?? null,
+    placement: report.placement ?? null,
+    health_tips: report.health_tips ?? [],
+    difficulty: report.difficulty ?? "moderate",
+    current_symptom: report.symptom ?? null,
+    symptom_source: report.symptom_source ?? null,
     auto_symptom_detail: report.auto_symptom_detail ?? null,
-    text_diagnosis:      report.text_diagnosis ?? null,
-    schedule:            report.schedule ?? {},
-    notes:               report.notes ?? null,
+    text_diagnosis: report.text_diagnosis ?? null,
+    schedule: report.schedule ?? {},
+    notes: report.notes ?? null,
   };
 }
 
 function updatesToRow(updates) {
   const fieldMap = {
-    status:              'status',
-    species:             'species',
-    common_name:         'common_name',
-    photoUri:            'photo_url',
-    confidence:          'confidence',
-    source:              'source',
-    water:               'water',
-    sunlight:            'sunlight',
-    soil:                'soil',
-    humidity:            'humidity',
-    placement:           'placement',
-    health_tips:         'health_tips',
-    difficulty:          'difficulty',
-    symptom:             'current_symptom',
-    symptom_source:      'symptom_source',
-    auto_symptom_detail: 'auto_symptom_detail',
-    text_diagnosis:      'text_diagnosis',
-    schedule:            'schedule',
-    notes:               'notes',
+    status: "status",
+    species: "species",
+    common_name: "common_name",
+    photoUri: "photo_url",
+    confidence: "confidence",
+    source: "source",
+    water: "water",
+    sunlight: "sunlight",
+    soil: "soil",
+    humidity: "humidity",
+    placement: "placement",
+    health_tips: "health_tips",
+    difficulty: "difficulty",
+    symptom: "current_symptom",
+    symptom_source: "symptom_source",
+    auto_symptom_detail: "auto_symptom_detail",
+    text_diagnosis: "text_diagnosis",
+    schedule: "schedule",
+    notes: "notes",
   };
   const row = {};
   for (const [appKey, dbKey] of Object.entries(fieldMap)) {
@@ -88,15 +89,31 @@ export async function uploadPlantPhoto(localUri) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    const info = await FileSystem.getInfoAsync(localUri);
+    console.log('[uploadPlantPhoto] file size:', info.size, 'bytes, uri:', localUri);
+
     const path = `${user.id}/${Date.now()}.jpg`;
-    const response = await fetch(localUri);
-    const blob = await response.blob();
-    const { error } = await supabase.storage
-      .from('plant-photos')
-      .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
-    if (error) return null;
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/plant-photos/${path}`;
+
+    const result = await FileSystem.uploadAsync(uploadUrl, localUri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: SUPABASE_ANON_KEY,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'false',
+      },
+    });
+
+    console.log('[uploadPlantPhoto] upload status:', result.status, result.body);
+    if (result.status < 200 || result.status >= 300) return null;
     return supabase.storage.from('plant-photos').getPublicUrl(path).data.publicUrl;
-  } catch {
+  } catch (e) {
+    console.log('[uploadPlantPhoto] error:', e?.message);
     return null;
   }
 }
@@ -105,14 +122,16 @@ export async function uploadPlantPhoto(localUri) {
 
 export async function getHistory() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase
-      .from('plants')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'owned')
-      .order('created_at', { ascending: false });
+      .from("plants")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "owned")
+      .order("created_at", { ascending: false });
     if (error) return [];
     return (data ?? []).map(fromRow);
   } catch {
@@ -122,11 +141,13 @@ export async function getHistory() {
 
 export async function addToHistory(report) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return null;
     const { data, error } = await supabase
-      .from('plants')
-      .insert({ ...toRow(report), user_id: user.id, status: 'owned' })
+      .from("plants")
+      .insert({ ...toRow(report), user_id: user.id, status: "owned" })
       .select()
       .single();
     if (error) return null;
@@ -138,7 +159,7 @@ export async function addToHistory(report) {
 
 export async function deleteFromHistory(id) {
   try {
-    await supabase.from('plants').delete().eq('id', id);
+    await supabase.from("plants").delete().eq("id", id);
   } catch {}
 }
 
@@ -147,9 +168,9 @@ export async function updateHistory(id, updates) {
     const row = updatesToRow(updates);
     if (Object.keys(row).length === 0) return null;
     const { data, error } = await supabase
-      .from('plants')
+      .from("plants")
       .update(row)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
     if (error) return null;
@@ -161,8 +182,14 @@ export async function updateHistory(id, updates) {
 
 export async function clearHistory() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from('plants').delete().eq('user_id', user.id).eq('status', 'owned');
+    await supabase
+      .from("plants")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("status", "owned");
   } catch {}
 }
