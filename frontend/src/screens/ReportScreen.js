@@ -70,20 +70,12 @@ const SYMPTOM_INFO = {
 const SYMPTOM_CHIPS = ['Yellow edges', 'Brown tips', 'Drooping', 'Spots'];
 
 function getDiagnosis(report) {
-  const { symptom, symptom_source, auto_symptom_detail, text_diagnosis } = report ?? {};
+  const { symptom, symptom_source, text_diagnosis } = report ?? {};
   if (!symptom || symptom === 'None') return null;
+  if (symptom_source !== 'user') return null;
 
   if (text_diagnosis) {
     return { headerLabel: 'DIAGNOSIS', title: text_diagnosis.title, body: text_diagnosis.body };
-  }
-
-  if (symptom_source === 'auto' && auto_symptom_detail?.summary) {
-    const detected = auto_symptom_detail.symptoms?.join(', ') || symptom;
-    return {
-      headerLabel: 'WE NOTICED SOMETHING',
-      title: detected.charAt(0).toUpperCase() + detected.slice(1),
-      body: auto_symptom_detail.summary,
-    };
   }
 
   const info = SYMPTOM_INFO[symptom] ?? {

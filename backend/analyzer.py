@@ -296,7 +296,13 @@ async def analyze_plant(
     else:
         species, confidence = await identify_species(image_bytes)
 
-    vision_task = asyncio.create_task(detect_symptoms(image_bytes, media_type))
+    # Only run vision detection when the user reported a specific symptom —
+    # avoids wasted API calls and prevents auto-detected symptoms from
+    # triggering the diagnosis card when the user selected "None".
+    vision_task = (
+        asyncio.create_task(detect_symptoms(image_bytes, media_type))
+        if user_symptom else None
+    )
 
     cached = _care_from_cache(species)
     if cached:
@@ -306,18 +312,10 @@ async def analyze_plant(
         care = await _care_from_claude(species)
         source = "claude"
 
-    auto_symptoms = await vision_task
+    auto_symptoms = await vision_task if vision_task else None
 
-    if user_symptom:
-        final_symptom = user_symptom
-        symptom_source = "user"
-    elif auto_symptoms and auto_symptoms.get("detected"):
-        symptoms_list = auto_symptoms.get("symptoms", [])
-        final_symptom = symptoms_list[0] if symptoms_list else None
-        symptom_source = "auto" if final_symptom else None
-    else:
-        final_symptom = None
-        symptom_source = None
+    final_symptom = user_symptom
+    symptom_source = "user" if user_symptom else None
 
     return {
         "species": care.get("species", species),

@@ -160,8 +160,14 @@ export async function addToHistory(report) {
   }
 }
 
-export async function deleteFromHistory(id) {
+export async function deleteFromHistory(id, photoUri = null) {
   try {
+    if (photoUri) {
+      const match = photoUri.match(/plant-photos\/(.+)$/);
+      if (match) {
+        await supabase.storage.from("plant-photos").remove([match[1]]);
+      }
+    }
     await supabase.from("plants").delete().eq("id", id);
   } catch {}
 }

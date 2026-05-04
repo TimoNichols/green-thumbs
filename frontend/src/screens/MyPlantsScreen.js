@@ -404,9 +404,9 @@ export default function MyPlantsScreen({ navigation }) {
     filter === 'Flagged'  ? items.filter((i) => !!i.symptom) :
     items;
 
-  async function handleDeletePlant(id) {
+  async function handleDeletePlant(id, photoUri) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    await deleteFromHistory(id);
+    await deleteFromHistory(id, photoUri);
     setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
@@ -514,7 +514,7 @@ export default function MyPlantsScreen({ navigation }) {
         keyExtractor={(item) => `${reloadKey}-${item.id}`}
         renderItem={({ item }) =>
           tab === 'plants' ? (
-            <SwipeableRow onDelete={() => handleDeletePlant(item.id)}>
+            <SwipeableRow onDelete={() => handleDeletePlant(item.id, item.photoUri)}>
               <PlantRow
                 item={item}
                 onPress={() => navigation.navigate('Report', { report: item })}
