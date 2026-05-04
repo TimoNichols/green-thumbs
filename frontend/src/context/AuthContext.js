@@ -35,8 +35,9 @@ export function AuthProvider({ children }) {
   }
 
   async function signUp(email, password) {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
+    return data; // { user, session } — session is null when email confirmation is required
   }
 
   async function signOut() {

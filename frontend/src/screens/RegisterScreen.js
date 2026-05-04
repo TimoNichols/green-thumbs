@@ -43,8 +43,13 @@ export default function RegisterScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await signUp(e, password);
-      setSuccess(true);
+      const data = await signUp(e, password);
+      if (data?.session) {
+        // Email confirmation is disabled — onAuthStateChange will fire and
+        // RootNavigator automatically switches to the main app stack.
+      } else {
+        setSuccess(true);
+      }
     } catch (err) {
       Alert.alert('Registration failed', err.message || 'Something went wrong. Please try again.');
     } finally {
@@ -127,19 +132,39 @@ export default function RegisterScreen({ navigation }) {
         {success ? (
           <View style={styles.successBox}>
             <Text style={styles.successText}>Account created!</Text>
-            <Text style={styles.successSub}>Check your email for a confirmation link, then sign in.</Text>
+            <Text style={styles.successSub}>
+              Check your email for a confirmation link, then sign in.
+            </Text>
+            <Pressable
+              onPress={() => navigation.navigate('Login')}
+              style={({ pressed }) => [styles.goToSignInBtn, pressed && { opacity: 0.75 }]}
+            >
+              <Text style={styles.goToSignInText}>Go to sign in</Text>
+            </Pressable>
           </View>
         ) : (
-          <Pressable
-            onPress={handleRegister}
-            disabled={loading}
-            style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.85 }]}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.ctaBtnText}>Create account</Text>
-            }
-          </Pressable>
+          <>
+            <Pressable
+              onPress={handleRegister}
+              disabled={loading}
+              style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.85 }]}
+            >
+              {loading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.ctaBtnText}>Create account</Text>
+              }
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('Login')}
+              style={({ pressed }) => [styles.signInLink, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.signInLinkText}>
+                {'Already have an account? '}
+                <Text style={styles.signInLinkHighlight}>Sign in</Text>
+              </Text>
+            </Pressable>
+          </>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -252,5 +277,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSoft,
     textAlign: 'center',
+  },
+  goToSignInBtn: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.pine,
+  },
+  goToSignInText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 14,
+    color: colors.pine,
+  },
+
+  signInLink: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  signInLinkText: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textSoft,
+  },
+  signInLinkHighlight: {
+    fontFamily: fonts.sansBold,
+    color: colors.pine,
   },
 });

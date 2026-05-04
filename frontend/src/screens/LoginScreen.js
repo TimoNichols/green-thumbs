@@ -112,6 +112,16 @@ export default function LoginScreen({ navigation }) {
           }
         </Pressable>
 
+        <Pressable
+          onPress={() => navigation.navigate('Register')}
+          style={({ pressed }) => [styles.createAccountLink, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={styles.createAccountText}>
+            {'Don\'t have an account? '}
+            <Text style={styles.createAccountHighlight}>Create one</Text>
+          </Text>
+        </Pressable>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -195,13 +205,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.pine,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   ctaBtnText: {
     fontFamily: fonts.sansBold,
     fontSize: 15,
     color: '#fff',
     letterSpacing: 0.2,
+  },
+
+  createAccountLink: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  createAccountText: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.textSoft,
+  },
+  createAccountHighlight: {
+    fontFamily: fonts.sansBold,
+    color: colors.pine,
   },
 
 });
