@@ -59,9 +59,13 @@ function SwipeableRow({ children, onDelete }) {
       tx.value = Math.min(0, Math.max(-DELETE_W, startX.value + e.translationX));
     })
     .onEnd((e) => {
-      const displaced = tx.value < -8;
-      const shouldReveal = tx.value < -(DELETE_W / 2) || (displaced && e.velocityX < -400);
-      tx.value = shouldReveal
+      if (Math.abs(e.translationX) < 5) {
+        tx.value = withSpring(0, { damping: 20, stiffness: 200 });
+        return;
+      }
+      const farEnough = tx.value < -(DELETE_W / 2);
+      const flick = e.translationX < -30 && e.velocityX < -500;
+      tx.value = (farEnough || flick)
         ? withTiming(-DELETE_W, { duration: 180 })
         : withSpring(0, { damping: 20, stiffness: 200 });
     })

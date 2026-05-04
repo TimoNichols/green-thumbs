@@ -1,7 +1,7 @@
 // Update API_BASE_URL to your machine's local IP for device testing.
 // Find it with: ipconfig (Windows) → IPv4 under Wi-Fi
 // Replace with your Railway URL for production.
-export const API_BASE_URL = "http://10.0.0.152:8000";
+export const API_BASE_URL = "https://green-thumbs-production.up.railway.app";
 
 export async function analyzeImage(
   photoUri,
