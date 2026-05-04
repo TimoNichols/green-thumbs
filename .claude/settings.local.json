@@ -29,7 +29,8 @@
       "Bash(git -C \"D:\\\\GreenThumbsApp\\\\green-thumbs\" add frontend/src/screens/MyPlantsScreen.js frontend/src/utils/api.js .claude/settings.local.json)",
       "Bash(git -C 'D:\\\\GreenThumbsApp\\\\green-thumbs' commit -m ' *)",
       "Bash(git *)",
-      "mcp__claude_ai_Supabase__get_project"
+      "mcp__claude_ai_Supabase__get_project",
+      "WebFetch(domain:green-thumbs-production.up.railway.app)"
     ]
   }
 }

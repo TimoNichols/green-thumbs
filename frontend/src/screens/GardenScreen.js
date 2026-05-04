@@ -11,7 +11,10 @@ import {
   Platform,
   KeyboardAvoidingView,
   TextInput,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,11 +26,12 @@ import { fetchWaterInterval, fetchCareSchedule } from '../utils/api';
 import { logActivity } from '../utils/activity';
 import * as Ico from '../components/Ico';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 // ─── Constants ────────────────────────────────────────────────
 const WEEK_DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-// Approximate pixel heights for the calendar card animation.
-// Tweak if text scales differently on your device.
 const CAL_WEEK_H  = 96;
 const CAL_MONTH_H = 324;
 
@@ -63,7 +67,6 @@ function getMonthLabel(date) {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
 }
 
-// Returns 42 Date objects (6 weeks) starting from the Monday on/before the 1st
 function buildMonthDays(firstOfMonth) {
   const startOffset = weekdayIdx(firstOfMonth);
   const start = new Date(firstOfMonth);
@@ -75,22 +78,31 @@ function buildMonthDays(firstOfMonth) {
   });
 }
 
-function taskDueLabel(label, diffDays, dueDate) {
+function dueDateChipLabel(diffDays, dueDate) {
   if (diffDays < 0) {
     const n = Math.abs(diffDays);
-    return `${label} · due ${n} day${n === 1 ? '' : 's'} ago`;
+    return `${n}d overdue`;
   }
-  if (diffDays === 0) return `${label} today`;
-  return `${label} ${dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  return dueDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 // ─── Task types ───────────────────────────────────────────────
 const TASK_TYPES = [
-  { key: 'water',      label: 'Water',       color: colors.pine   },
-  { key: 'wipeLeaves', label: 'Wipe leaves', color: colors.leaf   },
-  { key: 'fertilise',  label: 'Fertilise',   color: colors.amber  },
+  { key: 'water',      label: 'Water',       color: colors.pine     },
+  { key: 'wipeLeaves', label: 'Wipe leaves', color: colors.leaf     },
+  { key: 'fertilise',  label: 'Fertilise',   color: colors.amber    },
   { key: 'rotate',     label: 'Rotate',      color: colors.textMute },
 ];
+
+// Maps each task to the plant care field that describes it
+const TASK_CARE_FIELD = {
+  water:      'water',
+  wipeLeaves: 'humidity',
+  fertilise:  'soil',
+  rotate:     'sunlight',
+};
 
 function TaskIcon({ taskKey, color, size }) {
   switch (taskKey) {
@@ -117,7 +129,6 @@ function buildTasksFromHistory(history) {
       const intervalDays = sched[key] ?? null;
       if (!intervalDays) return;
 
-      // Use per-task last-care date if available; fall back to plant creation date
       const anchorStr = lastCareMap[key] ?? null;
       const anchor = anchorStr
         ? new Date(anchorStr)
@@ -149,61 +160,120 @@ function buildTasksFromHistory(history) {
   return tasks.sort((a, b) => a.diffDays - b.diffDays);
 }
 
-// ─── Task row ─────────────────────────────────────────────────
-function TaskRow({ task, done, onToggle, onEdit }) {
-  const muted = !task.isToday;
-  const label = taskDueLabel(task.taskLabel, task.diffDays, task.dueDate);
-  const iconColor = muted ? colors.textMute : task.taskColor;
+// ─── Task card ────────────────────────────────────────────────
+function TaskCard({ task, done, isExpanded, onExpand, onToggle, onReschedule }) {
+  const careField = TASK_CARE_FIELD[task.taskKey];
+  const careText = careField ? task.plant[careField] : null;
+  const chipLabel = dueDateChipLabel(task.diffDays, task.dueDate);
 
   return (
     <Pressable
-      onPress={() => onToggle(task.id)}
-      style={({ pressed }) => [styles.taskRow, muted && styles.taskRowMuted, pressed && { opacity: 0.82 }]}
+      onPress={() => onExpand(task.id)}
+      style={({ pressed }) => [
+        styles.taskCard,
+        isExpanded && styles.taskCardExpanded,
+        pressed && !isExpanded && { opacity: 0.85 },
+      ]}
     >
-      <View style={[styles.taskTile, muted && styles.taskTileMuted]}>
-        <TaskIcon taskKey={task.taskKey} color={iconColor} size={18} />
-      </View>
+      {isExpanded && <View style={styles.taskCardAccentBar} />}
 
-      <View style={styles.taskBody}>
-        <Text style={[styles.taskName, done && styles.taskNameDone, muted && styles.taskNameMuted]} numberOfLines={1}>
-          {task.plantName}
-        </Text>
-        <View style={styles.taskMetaRow}>
-          <Text style={[styles.taskLabel, muted && styles.taskLabelMuted]}>{label}</Text>
-          {task.isOverdue && !done && (
-            <View style={styles.overduePill}>
-              <Text style={styles.overduePillText}>Overdue</Text>
-            </View>
+      {/* ── Collapsed header row ── */}
+      <View style={styles.taskCardHeader}>
+        <View style={styles.taskThumb}>
+          {task.plant.photoUri ? (
+            <Image
+              source={{ uri: task.plant.photoUri }}
+              style={styles.taskThumbImg}
+              contentFit="cover"
+            />
+          ) : (
+            <TaskIcon taskKey={task.taskKey} color={task.taskColor} size={18} />
           )}
+        </View>
+
+        <View style={styles.taskCardBody}>
+          <Text
+            style={[styles.taskCardName, done && styles.taskCardNameDone]}
+            numberOfLines={1}
+          >
+            {task.plantName}
+          </Text>
+          <View style={styles.taskCardMeta}>
+            <TaskIcon taskKey={task.taskKey} color={colors.textMute} size={11} />
+            <Text style={styles.taskCardMetaLabel}>{task.taskLabel}</Text>
+            <View style={[styles.dueDateChip, task.isOverdue && styles.dueDateChipOverdue]}>
+              <Text style={[styles.dueDateChipText, task.isOverdue && styles.dueDateChipTextOverdue]}>
+                {chipLabel}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ transform: [{ rotate: isExpanded ? '-90deg' : '90deg' }] }}>
+          <Ico.Chevron color={colors.textMute} size={12} />
         </View>
       </View>
 
-      <Pressable onPress={() => onEdit(task.plant)} hitSlop={10} style={styles.editIconWrap}>
-        <Ico.More color={colors.textMute} size={15} />
-      </Pressable>
+      {/* ── Expanded panel ── */}
+      {isExpanded && (
+        <View style={styles.taskCardPanel}>
+          {careText ? (
+            <Text style={styles.taskCardCareText}>{careText}</Text>
+          ) : null}
 
-      <View style={[styles.checkbox, done && styles.checkboxDone]}>
-        {done && <Ico.Check color={colors.bg} size={12} />}
-      </View>
+          <Pressable
+            onPress={() => { onToggle(task.id); onExpand(null); }}
+            style={({ pressed }) => [styles.markDoneBtn, pressed && { opacity: 0.85 }]}
+          >
+            <Ico.Check color="#fff" size={14} />
+            <Text style={styles.markDoneBtnText}>Mark done</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => { onReschedule(task); onExpand(null); }}
+            style={({ pressed }) => [styles.rescheduleLink, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={styles.rescheduleLinkText}>Reschedule +1 day</Text>
+          </Pressable>
+        </View>
+      )}
     </Pressable>
   );
 }
 
-// ─── Empty state ──────────────────────────────────────────────
-function EmptyState({ onScan }) {
+// ─── Empty / all-caught-up state ──────────────────────────────
+function EmptyState({ onScan, nextTask }) {
   return (
     <View style={styles.emptyCard}>
       <View style={styles.emptyIconWrap}>
-        <Ico.Leaf color={colors.pine} size={24} />
+        <Ico.Leaf color={colors.leaf} size={22} />
       </View>
       <Text style={styles.emptyTitle}>
-        <Text style={styles.emptyTitleItalic}>Nothing</Text>{' '}scheduled yet
+        <Text style={styles.emptyTitleItalic}>All caught up!</Text>
       </Text>
-      <Text style={styles.emptyBody}>Scan a plant to start tracking care reminders.</Text>
-      <Pressable onPress={onScan} style={({ pressed }) => [styles.emptyBtn, pressed && { opacity: 0.85 }]}>
-        <Ico.Scan color={colors.pine} size={16} />
-        <Text style={styles.emptyBtnText}>Scan a plant</Text>
-      </Pressable>
+      {nextTask ? (
+        <Text style={styles.emptyBody}>
+          {'Next up: '}
+          {nextTask.taskLabel.toLowerCase()}
+          {' your '}
+          {nextTask.plantName}
+          {' on '}
+          {nextTask.dueDate.toLocaleDateString('en-US', { weekday: 'long' })}
+        </Text>
+      ) : (
+        <>
+          <Text style={styles.emptyBody}>
+            No tasks scheduled. Scan a plant to get started.
+          </Text>
+          <Pressable
+            onPress={onScan}
+            style={({ pressed }) => [styles.emptyBtn, pressed && { opacity: 0.85 }]}
+          >
+            <Ico.Scan color={colors.pine} size={16} />
+            <Text style={styles.emptyBtnText}>Scan a plant</Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }
@@ -314,7 +384,6 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave, forceWaterS
             </Pressable>
           </View>
 
-          {/* Plant picker — iOS-style tappable field */}
           {isNew && (
             <View style={styles.sheetSection}>
               <Text style={styles.sheetSectionLabel}>Plant</Text>
@@ -377,7 +446,6 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave, forceWaterS
             </View>
           )}
 
-          {/* Water interval — free text input */}
           <View style={styles.sheetSection}>
             <View style={styles.taskTypeRow}>
               <View style={[styles.taskTypeIcon, { backgroundColor: colors.bgMint }]}>
@@ -412,7 +480,6 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave, forceWaterS
             )}
           </View>
 
-          {/* Extra task types — free text input + AI suggestion hint */}
           {EXTRA_TASKS.map(({ key, label, iconBg, iconColor }) => {
             const enabled = sched[key] !== null;
             return (
@@ -479,34 +546,32 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave, forceWaterS
 // ─── Screen ───────────────────────────────────────────────────
 export default function GardenScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const [history, setHistory]         = useState([]);
-  const [tasks, setTasks]             = useState([]);
-  const [completed, setCompleted]     = useState(new Set());
-  const [expanded, setExpanded]       = useState(false);
-  const [calMonth, setCalMonth]       = useState(() => {
+  const [history, setHistory]           = useState([]);
+  const [tasks, setTasks]               = useState([]);
+  const [completed, setCompleted]       = useState(new Set());
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
+  const [expanded, setExpanded]         = useState(false);
+  const [calMonth, setCalMonth]         = useState(() => {
     const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [showSheet, setShowSheet]     = useState(false);
+  const [selectedDay, setSelectedDay]   = useState(null);
+  const [showSheet, setShowSheet]       = useState(false);
   const [editingPlant, setEditingPlant] = useState(null);
   const [sheetFromReport, setSheetFromReport] = useState(false);
 
   const calAnim = useRef(new Animated.Value(0)).current;
-  // Ref so useFocusEffect (memoized with []) always reads the latest route param
   const openScheduleForRef = useRef(route.params?.openScheduleFor ?? null);
   openScheduleForRef.current = route.params?.openScheduleFor ?? null;
 
   useFocusEffect(
     useCallback(() => {
       async function load() {
-        // Capture param at start of async chain to avoid stale reads
         const openFor = openScheduleForRef.current;
 
         const h = await getHistory();
         setHistory(h);
         setTasks(buildTasksFromHistory(h));
 
-        // Auto-open schedule sheet when navigated here from Report screen
         if (openFor) {
           const target = h.find((p) => p.id === openFor);
           if (target) {
@@ -517,7 +582,6 @@ export default function GardenScreen({ navigation, route }) {
           navigation.setParams({ openScheduleFor: undefined });
         }
 
-        // Auto-schedule water interval for existing plants that have care text but no schedule yet
         const unscheduled = h.filter((p) => p.water && !p.schedule?.water);
         if (unscheduled.length > 0) {
           Promise.all(
@@ -550,6 +614,11 @@ export default function GardenScreen({ navigation, route }) {
     }).start();
   }
 
+  function handleExpand(id) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedTaskId((prev) => (prev === id ? null : id));
+  }
+
   async function handleToggle(id) {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const isMarking = !completed.has(id);
@@ -562,7 +631,6 @@ export default function GardenScreen({ navigation, route }) {
       const task = tasks.find((t) => t.id === id);
       if (task) {
         logActivity({ plantId: task.plantId, type: task.taskKey });
-        // Persist last care date so the due date anchor advances
         const todayStr = new Date().toISOString().split('T')[0];
         const newLastCare = { ...(task.plant.lastCare ?? {}), [task.taskKey]: todayStr };
         await updateHistory(task.plantId, { lastCare: newLastCare });
@@ -571,6 +639,22 @@ export default function GardenScreen({ navigation, route }) {
         setTasks(buildTasksFromHistory(fresh));
       }
     }
+  }
+
+  async function handleReschedule(task) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const { taskKey, plant } = task;
+    const anchorStr = plant.lastCare?.[taskKey] ?? null;
+    const anchor = anchorStr
+      ? new Date(anchorStr)
+      : (plant.timestamp ? new Date(plant.timestamp) : new Date());
+    anchor.setHours(0, 0, 0, 0);
+    anchor.setDate(anchor.getDate() + 1);
+    const newLastCare = { ...(plant.lastCare ?? {}), [taskKey]: anchor.toISOString().split('T')[0] };
+    await updateHistory(task.plantId, { lastCare: newLastCare });
+    const fresh = await getHistory();
+    setHistory(fresh);
+    setTasks(buildTasksFromHistory(fresh));
   }
 
   async function handleSaveSchedule(plantId, schedule) {
@@ -586,19 +670,16 @@ export default function GardenScreen({ navigation, route }) {
   const weekDates = getWeekDates();
   const monthDays = buildMonthDays(calMonth);
 
-  // Set of date strings for calendar dots
   const taskDateStrings = new Set(
     tasks.map((t) => (t.diffDays < 0 ? today : t.dueDate).toDateString())
   );
 
-  // Dot columns for the collapsed week strip
   const weekDotCols = new Set();
   tasks.forEach((t) => {
     if (t.diffDays < 0) { weekDotCols.add(todayIdx); return; }
     if (t.dueDate >= weekDates[0] && t.dueDate <= weekDates[6]) weekDotCols.add(weekdayIdx(t.dueDate));
   });
 
-  // Filtered task list
   const visibleTasks = selectedDay
     ? tasks.filter((t) => {
         if (t.dueDate.toDateString() === selectedDay.toDateString()) return true;
@@ -606,10 +687,12 @@ export default function GardenScreen({ navigation, route }) {
       })
     : tasks.filter((t) => t.diffDays <= 6);
 
-  const todayTasks    = selectedDay ? visibleTasks : visibleTasks.filter((t) => t.isToday);
-  const upcomingTasks = selectedDay ? [] : visibleTasks.filter((t) => !t.isToday);
+  const overdueTasks  = selectedDay ? [] : visibleTasks.filter((t) => t.diffDays < 0);
+  const todayTasks    = selectedDay ? [] : visibleTasks.filter((t) => t.diffDays === 0);
+  const upcomingTasks = selectedDay ? [] : visibleTasks.filter((t) => t.diffDays > 0);
 
-  // Animation interpolations
+  const showAllCaughtUp = !selectedDay && overdueTasks.length === 0 && todayTasks.length === 0;
+
   const calHeight    = calAnim.interpolate({ inputRange: [0, 1], outputRange: [CAL_WEEK_H, CAL_MONTH_H] });
   const weekOpacity  = calAnim.interpolate({ inputRange: [0, 0.25], outputRange: [1, 0], extrapolate: 'clamp' });
   const monthOpacity = calAnim.interpolate({ inputRange: [0.35, 0.7], outputRange: [0, 1], extrapolate: 'clamp' });
@@ -621,6 +704,20 @@ export default function GardenScreen({ navigation, route }) {
 
   const topPad = Math.max(56, insets.top + 16);
 
+  function renderTaskCard(t) {
+    return (
+      <TaskCard
+        key={t.id}
+        task={t}
+        done={completed.has(t.id)}
+        isExpanded={expandedTaskId === t.id}
+        onExpand={handleExpand}
+        onToggle={handleToggle}
+        onReschedule={handleReschedule}
+      />
+    );
+  }
+
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -629,8 +726,11 @@ export default function GardenScreen({ navigation, route }) {
         style={styles.bgWash} pointerEvents="none"
       />
 
-      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingTop: topPad }]} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingTop: topPad }]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ── Header ──────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
@@ -652,7 +752,6 @@ export default function GardenScreen({ navigation, route }) {
         {/* ── Calendar card ───────────────────────────────── */}
         <Animated.View style={[styles.calCard, { height: calHeight }]}>
 
-          {/* Week strip (collapsed content) */}
           <Animated.View style={[styles.calLayer, { opacity: weekOpacity }]} pointerEvents={expanded ? 'none' : 'auto'}>
             <View style={styles.dayHeaderRow}>
               {WEEK_DAYS.map((d, i) => (
@@ -681,7 +780,6 @@ export default function GardenScreen({ navigation, route }) {
             </View>
           </Animated.View>
 
-          {/* Month grid (expanded content) */}
           <Animated.View style={[styles.calLayer, { opacity: monthOpacity }]} pointerEvents={expanded ? 'auto' : 'none'}>
             <View style={styles.monthNavRow}>
               <Pressable onPress={() => setCalMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
@@ -750,38 +848,50 @@ export default function GardenScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* ── Today / selected tasks ───────────────────────── */}
+        {/* ── When a calendar day is selected ─────────────── */}
+        {selectedDay && (
+          <View style={styles.section}>
+            <Text style={styles.sectionToday}>{selectedLabel}</Text>
+            {visibleTasks.length > 0 ? (
+              visibleTasks.map(renderTaskCard)
+            ) : (
+              <View style={styles.noTasksWrap}>
+                <Text style={styles.noTasksText}>No tasks on this day</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ── Overdue ──────────────────────────────────────── */}
+        {overdueTasks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionOverdue}>Overdue</Text>
+            {overdueTasks.map(renderTaskCard)}
+          </View>
+        )}
+
+        {/* ── Today ────────────────────────────────────────── */}
         {todayTasks.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionToday}>{selectedDay ? selectedLabel : 'Today'}</Text>
-            {todayTasks.map((t) => (
-              <TaskRow key={t.id} task={t} done={completed.has(t.id)} onToggle={handleToggle}
-                onEdit={(p) => { setEditingPlant(p); setSheetFromReport(false); setShowSheet(true); }} />
-            ))}
+            <Text style={styles.sectionToday}>Today</Text>
+            {todayTasks.map(renderTaskCard)}
           </View>
+        )}
+
+        {/* ── All caught up ────────────────────────────────── */}
+        {showAllCaughtUp && (
+          <EmptyState
+            onScan={() => navigation.getParent()?.navigate('Camera')}
+            nextTask={upcomingTasks[0] ?? null}
+          />
         )}
 
         {/* ── Upcoming ─────────────────────────────────────── */}
         {upcomingTasks.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionUpcoming}>Upcoming</Text>
-            {upcomingTasks.map((t) => (
-              <TaskRow key={t.id} task={t} done={completed.has(t.id)} onToggle={handleToggle}
-                onEdit={(p) => { setEditingPlant(p); setSheetFromReport(false); setShowSheet(true); }} />
-            ))}
+            {upcomingTasks.map(renderTaskCard)}
           </View>
-        )}
-
-        {/* ── No tasks on selected day ─────────────────────── */}
-        {selectedDay && visibleTasks.length === 0 && (
-          <View style={styles.noTasksWrap}>
-            <Text style={styles.noTasksText}>No tasks on this day</Text>
-          </View>
-        )}
-
-        {/* ── Empty state ──────────────────────────────────── */}
-        {tasks.length === 0 && !selectedDay && (
-          <EmptyState onScan={() => navigation.getParent()?.navigate('Camera')} />
         )}
       </ScrollView>
 
@@ -827,7 +937,6 @@ const styles = StyleSheet.create({
   },
   calLayer: { position: 'absolute', top: 0, left: 0, right: 0, padding: 12 },
 
-  // Day headers (shared between week and month views)
   dayHeaderRow: { flexDirection: 'row', marginBottom: 4 },
   dayHeaderText: {
     flex: 1, textAlign: 'center',
@@ -836,7 +945,6 @@ const styles = StyleSheet.create({
   },
   dayHeaderToday: { color: colors.pine },
 
-  // Week strip cells
   weekRow: { flexDirection: 'row', gap: 2 },
   dayCell: {
     flex: 1, alignItems: 'center', paddingVertical: 7,
@@ -849,7 +957,6 @@ const styles = StyleSheet.create({
   dayNum: { fontFamily: fonts.serif, fontSize: 17, color: colors.text },
   dayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent' },
 
-  // Month grid
   monthNavRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 10,
@@ -867,7 +974,6 @@ const styles = StyleSheet.create({
   monthCellTodayText: { color: '#F4F1E8' },
   monthDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent' },
 
-  // Expand/collapse toggle
   calChevron: {
     alignSelf: 'center', marginTop: -1, marginBottom: 16,
     width: 40, height: 24,
@@ -878,7 +984,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  // Selected day pill
   selectedDayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingHorizontal: 4 },
   selectedDayLabel: { fontFamily: fonts.sansBold, fontSize: 13, color: colors.text },
   clearDayBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill, backgroundColor: colors.bgAlt, borderWidth: 1, borderColor: colors.line },
@@ -886,45 +991,133 @@ const styles = StyleSheet.create({
 
   // ── Section headers
   section: { marginBottom: 8 },
-  sectionToday: { fontFamily: fonts.serifItalic, fontStyle: 'italic', fontSize: 20, lineHeight: 24, color: colors.text, letterSpacing: -0.2, marginBottom: 10, paddingHorizontal: 4 },
-  sectionUpcoming: { fontFamily: fonts.mono, fontSize: 10.5, color: colors.textMute, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 4, marginBottom: 10, paddingHorizontal: 4 },
-
-  // ── Task row
-  taskRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    padding: 12, paddingHorizontal: 14,
-    backgroundColor: colors.bgRaise, borderRadius: radii.xl,
-    borderWidth: 1, borderColor: colors.line, marginBottom: 8,
+  sectionOverdue: {
+    fontFamily: fonts.mono, fontSize: 10.5, color: colors.amber,
+    letterSpacing: 1.4, textTransform: 'uppercase',
+    marginBottom: 10, paddingHorizontal: 4,
   },
-  taskRowMuted: { opacity: 0.78 },
-  taskTile: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.bgMint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  taskTileMuted: { backgroundColor: colors.bgSage },
-  taskBody: { flex: 1, minWidth: 0 },
-  taskName: { fontFamily: fonts.serifItalic, fontStyle: 'italic', fontSize: 14, lineHeight: 18, color: colors.text, letterSpacing: -0.1, marginBottom: 3 },
-  taskNameDone: { textDecorationLine: 'line-through', color: colors.textMute },
-  taskNameMuted: { color: colors.textSoft },
-  taskMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  taskLabel: { fontFamily: fonts.sans, fontSize: 12, color: colors.textSoft },
-  taskLabelMuted: { color: colors.textMute },
-  editIconWrap: { padding: 4 },
+  sectionToday: {
+    fontFamily: fonts.serifItalic, fontStyle: 'italic',
+    fontSize: 20, lineHeight: 24, color: colors.text,
+    letterSpacing: -0.2, marginBottom: 10, paddingHorizontal: 4,
+  },
+  sectionUpcoming: {
+    fontFamily: fonts.mono, fontSize: 10.5, color: colors.textMute,
+    letterSpacing: 1.4, textTransform: 'uppercase',
+    marginTop: 4, marginBottom: 10, paddingHorizontal: 4,
+  },
 
-  // ── Overdue pill
-  overduePill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: radii.pill, backgroundColor: colors.amberSoft, borderWidth: 1, borderColor: colors.amberLine },
-  overduePillText: { fontFamily: fonts.sansBold, fontSize: 9.5, color: colors.amberDeep, letterSpacing: 0.3 },
+  // ── Task card
+  taskCard: {
+    backgroundColor: colors.bgRaise,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.line,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  taskCardExpanded: {
+    backgroundColor: colors.bgMint,
+    borderColor: 'rgba(92,138,92,0.25)',
+  },
+  taskCardAccentBar: {
+    position: 'absolute',
+    left: 0, top: 0, bottom: 0,
+    width: 3,
+    backgroundColor: colors.leaf,
+  },
+  taskCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    paddingLeft: 14,
+  },
+  taskThumb: {
+    width: 44, height: 44,
+    borderRadius: 10,
+    backgroundColor: colors.bgSage,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+    overflow: 'hidden',
+  },
+  taskThumbImg: { width: 44, height: 44, borderRadius: 10 },
+  taskCardBody: { flex: 1, minWidth: 0 },
+  taskCardName: {
+    fontFamily: fonts.serifItalic, fontStyle: 'italic',
+    fontSize: 14, lineHeight: 18,
+    color: colors.text, letterSpacing: -0.1,
+    marginBottom: 4,
+  },
+  taskCardNameDone: { textDecorationLine: 'line-through', color: colors.textMute },
+  taskCardMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
+  taskCardMetaLabel: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.textSoft },
+  dueDateChip: {
+    paddingHorizontal: 7, paddingVertical: 2,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bgSage,
+    borderWidth: 1, borderColor: colors.line,
+  },
+  dueDateChipOverdue: {
+    backgroundColor: colors.amberSoft,
+    borderColor: colors.amberLine,
+  },
+  dueDateChipText: { fontFamily: fonts.sansBold, fontSize: 9.5, color: colors.textSoft, letterSpacing: 0.2 },
+  dueDateChipTextOverdue: { color: colors.amberDeep },
 
-  // ── Checkbox
-  checkbox: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  checkboxDone: { backgroundColor: colors.forest, borderColor: colors.forest },
+  // ── Expanded panel
+  taskCardPanel: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    paddingTop: 2,
+    gap: 10,
+  },
+  taskCardCareText: {
+    fontFamily: fonts.sans, fontSize: 13, lineHeight: 19,
+    color: colors.textSoft,
+  },
+  markDoneBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, height: 44,
+    backgroundColor: colors.pine,
+    borderRadius: radii.lg,
+  },
+  markDoneBtnText: { fontFamily: fonts.sansBold, fontSize: 14, color: '#fff', letterSpacing: 0.2 },
+  rescheduleLink: { alignItems: 'center', paddingVertical: 2 },
+  rescheduleLinkText: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.textMute },
 
   // ── No tasks / empty
   noTasksWrap: { paddingVertical: 32, alignItems: 'center' },
   noTasksText: { fontFamily: fonts.sans, fontSize: 13, color: colors.textMute },
-  emptyCard: { marginTop: 32, padding: 36, paddingHorizontal: 28, borderRadius: radii['2xl'], backgroundColor: colors.bgRaise, borderWidth: 1, borderColor: colors.line, borderStyle: 'dashed', alignItems: 'center' },
-  emptyIconWrap: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.bgSage, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  emptyTitle: { fontFamily: fonts.serif, fontSize: 20, lineHeight: 24, color: colors.text, letterSpacing: -0.2, textAlign: 'center' },
+  emptyCard: {
+    marginTop: 24, padding: 32, paddingHorizontal: 28,
+    borderRadius: radii['2xl'],
+    backgroundColor: colors.bgRaise,
+    borderWidth: 1, borderColor: colors.line, borderStyle: 'dashed',
+    alignItems: 'center',
+  },
+  emptyIconWrap: {
+    width: 48, height: 48, borderRadius: 14,
+    backgroundColor: colors.bgSage,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontFamily: fonts.serif, fontSize: 20, lineHeight: 24,
+    color: colors.text, letterSpacing: -0.2, textAlign: 'center',
+  },
   emptyTitleItalic: { fontFamily: fonts.serifItalic, fontStyle: 'italic' },
-  emptyBody: { fontFamily: fonts.sans, fontSize: 13, color: colors.textSoft, textAlign: 'center', lineHeight: 19, marginTop: 8 },
-  emptyBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, height: 42, paddingHorizontal: 20, backgroundColor: colors.bgMint, borderWidth: 1, borderColor: 'rgba(92,138,92,0.4)', borderRadius: radii.xl },
+  emptyBody: {
+    fontFamily: fonts.sans, fontSize: 13, color: colors.textSoft,
+    textAlign: 'center', lineHeight: 19, marginTop: 8,
+  },
+  emptyBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginTop: 20, height: 42, paddingHorizontal: 20,
+    backgroundColor: colors.bgMint,
+    borderWidth: 1, borderColor: 'rgba(92,138,92,0.4)',
+    borderRadius: radii.xl,
+  },
   emptyBtnText: { fontFamily: fonts.sansBold, fontSize: 13, color: colors.pine },
 
   // ── Schedule sheet
@@ -942,120 +1135,55 @@ const styles = StyleSheet.create({
   sheetSection: { marginBottom: 18 },
   sheetSectionLabel: { fontFamily: fonts.mono, fontSize: 10, color: colors.textMute, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 },
 
-  // Plant picker — vertical list
   plantListScroll: { maxHeight: 192, marginTop: 2 },
   plantListRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    marginBottom: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 10, paddingHorizontal: 12,
+    borderRadius: radii.xl, borderWidth: 1, borderColor: 'transparent', marginBottom: 4,
   },
-  plantListRowActive: {
-    backgroundColor: colors.bgMint,
-    borderColor: 'rgba(92,138,92,0.35)',
-  },
-  plantListIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: colors.bgSage,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
+  plantListRowActive: { backgroundColor: colors.bgMint, borderColor: 'rgba(92,138,92,0.35)' },
+  plantListIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: colors.bgSage, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   plantListIconActive: { backgroundColor: colors.bgMint },
   plantListBody: { flex: 1, minWidth: 0 },
-  plantListName: {
-    fontFamily: fonts.serifItalic,
-    fontStyle: 'italic',
-    fontSize: 15,
-    lineHeight: 19,
-    color: colors.text,
-    letterSpacing: -0.1,
-  },
+  plantListName: { fontFamily: fonts.serifItalic, fontStyle: 'italic', fontSize: 15, lineHeight: 19, color: colors.text, letterSpacing: -0.1 },
   plantListNameActive: { color: colors.pine },
-  plantListSpecies: {
-    fontFamily: fonts.sans,
-    fontSize: 11.5,
-    color: colors.textMute,
-    marginTop: 1,
-  },
+  plantListSpecies: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.textMute, marginTop: 1 },
 
-  // Plant picker row (iOS-style tappable selector)
   plantPickerRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     height: 48, paddingHorizontal: 14,
     borderRadius: radii.xl, borderWidth: 1, borderColor: colors.line,
     backgroundColor: colors.bg,
   },
-  plantPickerIcon: {
-    width: 26, height: 26, borderRadius: 7,
-    backgroundColor: colors.bgSage, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
+  plantPickerIcon: { width: 26, height: 26, borderRadius: 7, backgroundColor: colors.bgSage, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   plantPickerIconActive: { backgroundColor: colors.bgMint },
-  plantPickerText: {
-    flex: 1, fontFamily: fonts.serifItalic, fontStyle: 'italic',
-    fontSize: 15, color: colors.text, letterSpacing: -0.1,
-  },
+  plantPickerText: { flex: 1, fontFamily: fonts.serifItalic, fontStyle: 'italic', fontSize: 15, color: colors.text, letterSpacing: -0.1 },
   plantPickerPlaceholder: { fontFamily: fonts.sans, fontStyle: 'normal', color: colors.textMute },
 
-  // Task type row (inside sheet)
   taskTypeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   taskTypeIcon: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   taskTypeLabel: { flex: 1, fontFamily: fonts.sansBold, fontSize: 14, color: colors.text },
 
-  // Toggle switch
   toggle: { width: 42, height: 25, borderRadius: 13, backgroundColor: colors.bgAlt, borderWidth: 1, borderColor: colors.lineSoft, justifyContent: 'center', paddingHorizontal: 3 },
   toggleOn: { backgroundColor: colors.bgMint, borderColor: 'rgba(92,138,92,0.4)' },
   toggleThumb: { width: 17, height: 17, borderRadius: 9, backgroundColor: colors.textMute },
   toggleThumbOn: { backgroundColor: colors.pine, alignSelf: 'flex-end' },
 
-  // Interval chips (used by extra tasks only now)
   intervalLoading: { fontFamily: fonts.sans, fontSize: 12, color: colors.textMute, paddingVertical: 10 },
-  intervalRow: { flexDirection: 'row', gap: 8 },
-  intervalChip: { flex: 1, height: 38, borderRadius: radii.lg, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
-  intervalChipActive: { backgroundColor: colors.bgMint, borderColor: 'rgba(92,138,92,0.5)' },
-  intervalChipText: { fontFamily: fonts.sansBold, fontSize: 12, color: colors.textSoft },
-  intervalChipTextActive: { color: colors.pine },
 
-  // Water free-input
   waterInputWrap: { gap: 6 },
-  waterInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  waterInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   waterInput: {
-    width: 80,
-    height: 48,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.line,
+    width: 80, height: 48,
+    borderRadius: radii.lg, borderWidth: 1, borderColor: colors.line,
     backgroundColor: colors.bg,
     paddingHorizontal: 14,
-    fontFamily: fonts.serif,
-    fontSize: 22,
-    color: colors.text,
+    fontFamily: fonts.serif, fontSize: 22, color: colors.text,
     textAlign: 'center',
   },
-  waterInputUnit: {
-    fontFamily: fonts.sansBold,
-    fontSize: 14,
-    color: colors.textSoft,
-  },
-  waterInputHint: {
-    fontFamily: fonts.sans,
-    fontSize: 12,
-    color: colors.textMute,
-    paddingHorizontal: 2,
-  },
+  waterInputUnit: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.textSoft },
+  waterInputHint: { fontFamily: fonts.sans, fontSize: 12, color: colors.textMute, paddingHorizontal: 2 },
 
-  // Save button
   sheetSaveBtn: { height: 52, borderRadius: radii.xl, backgroundColor: colors.pine, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   sheetSaveBtnDisabled: { backgroundColor: colors.bgAlt },
   sheetSaveBtnText: { fontFamily: fonts.sansBold, fontSize: 15, color: '#fff', letterSpacing: 0.2 },
