@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, NativeViewGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -45,12 +45,13 @@ function formatDate(ts) {
 }
 
 // ─── Swipeable row wrapper ────────────────────────────────────
-function SwipeableRow({ children, onDelete }) {
+function SwipeableRow({ children, onDelete, simultaneousHandlers }) {
   const tx = useSharedValue(0);
   const startX = useSharedValue(0);
 
   const gesture = Gesture.Pan()
-    .activeOffsetX([-20, 20])
+    .simultaneousWithExternalGesture(simultaneousHandlers)
+    .activeOffsetX([-40, 40])
     .failOffsetY([-10, 10])
     .onBegin(() => {
       startX.value = tx.value;
@@ -59,12 +60,8 @@ function SwipeableRow({ children, onDelete }) {
       tx.value = Math.min(0, Math.max(-DELETE_W, startX.value + e.translationX));
     })
     .onEnd((e) => {
-      if (Math.abs(e.translationX) < 5) {
-        tx.value = withSpring(0, { damping: 20, stiffness: 200 });
-        return;
-      }
       const farEnough = tx.value < -(DELETE_W / 2);
-      const flick = e.translationX < -30 && e.velocityX < -500;
+      const flick = e.translationX < -40 && e.velocityX < -500;
       tx.value = (farEnough || flick)
         ? withTiming(-DELETE_W, { duration: 180 })
         : withSpring(0, { damping: 20, stiffness: 200 });
@@ -100,7 +97,7 @@ function SwipeableRow({ children, onDelete }) {
 }
 
 // ─── Plant row ────────────────────────────────────────────────
-function PlantRow({ item, onPress }) {
+function PlantRow({ item, onPress, onMenuPress }) {
   const genus = item.species?.split(' ')[0] ?? item.common_name?.split(' ')[0] ?? 'Plant';
   const displayName = item.common_name || item.species || 'Unknown';
   const showBinomial = !!item.common_name && !!item.species;
@@ -131,18 +128,25 @@ function PlantRow({ item, onPress }) {
           <Text style={styles.pillHealthyText}>Healthy</Text>
         </View>
       )}
+      <Pressable
+        onPress={onMenuPress}
+        hitSlop={8}
+        style={({ pressed }) => [styles.rowMenuBtn, pressed && { opacity: 0.5 }]}
+      >
+        <Ico.More color={colors.textMute} size={16} />
+      </Pressable>
     </Pressable>
   );
 }
 
 // ─── Wishlist row ─────────────────────────────────────────────
-function WishlistRow({ item, onGotIt, onDelete }) {
+function WishlistRow({ item, onGotIt, onDelete, simultaneousHandlers }) {
   const genus = item.species?.split(' ')[0] ?? item.common_name?.split(' ')[0] ?? 'Plant';
   const displayName = item.common_name || item.species || 'Unknown';
   const showBinomial = !!item.common_name && !!item.species;
 
   return (
-    <SwipeableRow onDelete={onDelete}>
+    <SwipeableRow onDelete={onDelete} simultaneousHandlers={simultaneousHandlers}>
       <View style={styles.rowCard}>
         <PlantPlaceholder size={64} rx={14} label={genus.toUpperCase()} />
         <View style={styles.rowInfo}>
@@ -390,6 +394,7 @@ export default function MyPlantsScreen({ navigation }) {
   const [filter, setFilter] = useState('All');
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const flatListRef = useRef(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -509,34 +514,52 @@ export default function MyPlantsScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      <FlatList
-        data={listData}
-        keyExtractor={(item) => `${reloadKey}-${item.id}`}
-        renderItem={({ item }) =>
-          tab === 'plants' ? (
-            <SwipeableRow onDelete={() => handleDeletePlant(item.id, item.photoUri)}>
-              <PlantRow
+      <NativeViewGestureHandler ref={flatListRef}>
+        <FlatList
+          data={listData}
+          keyExtractor={(item) => `${reloadKey}-${item.id}`}
+          renderItem={({ item }) =>
+            tab === 'plants' ? (
+              <SwipeableRow
+                onDelete={() => handleDeletePlant(item.id, item.photoUri)}
+                simultaneousHandlers={flatListRef}
+              >
+                <PlantRow
+                  item={item}
+                  onPress={() => navigation.navigate('Report', { report: item })}
+                  onMenuPress={() => Alert.alert(
+                    item.common_name || item.species || 'Plant',
+                    undefined,
+                    [
+                      {
+                        text: 'Delete plant',
+                        style: 'destructive',
+                        onPress: () => handleDeletePlant(item.id, item.photoUri),
+                      },
+                      { text: 'Cancel', style: 'cancel' },
+                    ],
+                  )}
+                />
+              </SwipeableRow>
+            ) : (
+              <WishlistRow
                 item={item}
-                onPress={() => navigation.navigate('Report', { report: item })}
+                onGotIt={() => handleGotIt(item)}
+                onDelete={() => handleDeleteWishlist(item.id)}
+                simultaneousHandlers={flatListRef}
               />
-            </SwipeableRow>
-          ) : (
-            <WishlistRow
-              item={item}
-              onGotIt={() => handleGotIt(item)}
-              onDelete={() => handleDeleteWishlist(item.id)}
-            />
-          )
-        }
-        ListHeaderComponent={ListHeader}
-        ListEmptyComponent={
-          tab === 'plants'
-            ? <PlantsEmpty onScan={() => navigation.getParent()?.navigate('Camera')} />
-            : <WishlistEmpty />
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+            )
+          }
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
+            tab === 'plants'
+              ? <PlantsEmpty onScan={() => navigation.getParent()?.navigate('Camera')} />
+              : <WishlistEmpty />
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+      </NativeViewGestureHandler>
 
       <AddManuallySheet
         visible={showAddSheet}
@@ -667,6 +690,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   rowPhoto: { width: 64, height: 64, borderRadius: 14, flexShrink: 0 },
+  rowMenuBtn: { padding: 4, marginLeft: 4, flexShrink: 0 },
   rowInfo: {
     flex: 1,
     marginLeft: 12,
