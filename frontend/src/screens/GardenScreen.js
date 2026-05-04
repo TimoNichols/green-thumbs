@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
+  TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,13 +19,12 @@ import * as Haptics from 'expo-haptics';
 
 import { colors, fonts, radii } from '../utils/theme';
 import { getHistory, updateHistory } from '../utils/history';
-import { fetchWaterInterval } from '../utils/api';
+import { fetchWaterInterval, fetchCareSchedule } from '../utils/api';
 import { logActivity } from '../utils/activity';
 import * as Ico from '../components/Ico';
 
 // ─── Constants ────────────────────────────────────────────────
 const WEEK_DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const INTERVAL_OPTIONS = [3, 5, 7, 14];
 
 // Approximate pixel heights for the calendar card animation.
 // Tweak if text scales differently on your device.
@@ -215,37 +215,53 @@ const EXTRA_TASKS = [
   { key: 'rotate',     label: 'Rotate',      iconBg: colors.bgAlt,     iconColor: colors.textMute },
 ];
 
-function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
+function ScheduleSheet({ visible, plant, allPlants, onClose, onSave, forceWaterSuggestion }) {
   const insets = useSafeAreaInsets();
   const isNew = !plant;
 
-  const [selPlant, setSelPlant] = useState(null);
-  const [sched, setSched] = useState({ water: 7, wipeLeaves: null, fertilise: null, rotate: null });
+  const [selPlant, setSelPlant]   = useState(null);
+  const [sched, setSched]         = useState({ water: 7, wipeLeaves: null, fertilise: null, rotate: null });
   const [loadingInterval, setLoadingInterval] = useState(false);
+  const [suggestions, setSuggestions] = useState({ water: null, wipeLeaves: null, fertilise: null, rotate: null });
+  const [pickingPlant, setPickingPlant] = useState(false);
 
-  async function loadWaterSuggestion(p) {
-    if (!p?.water || p.schedule?.water) return;
+  async function loadScheduleSuggestions(p, force) {
+    const plantName = p?.common_name || p?.species;
+    if (!plantName) return;
     setLoadingInterval(true);
     try {
-      const { intervalDays } = await fetchWaterInterval(p.water);
-      setSched((s) => ({ ...s, water: intervalDays }));
+      const careData = { water: p.water, sunlight: p.sunlight, soil: p.soil, humidity: p.humidity };
+      const result = await fetchCareSchedule(plantName, careData);
+      const newSug = {
+        water:      result.water?.intervalDays      ?? null,
+        wipeLeaves: result.wipeLeaves?.intervalDays ?? null,
+        fertilise:  result.fertilise?.intervalDays  ?? null,
+        rotate:     result.rotate?.intervalDays     ?? null,
+      };
+      setSuggestions(newSug);
+      if ((force || !p.schedule?.water) && newSug.water) {
+        setSched((s) => ({ ...s, water: newSug.water }));
+      }
     } catch {}
     setLoadingInterval(false);
   }
 
   React.useEffect(() => {
-    if (!visible) return;
+    if (!visible) { setPickingPlant(false); return; }
     if (plant) {
       setSelPlant(plant);
+      setSuggestions({ water: null, wipeLeaves: null, fertilise: null, rotate: null });
       setSched({
         water:      plant.schedule?.water      ?? 7,
         wipeLeaves: plant.schedule?.wipeLeaves ?? null,
         fertilise:  plant.schedule?.fertilise  ?? null,
         rotate:     plant.schedule?.rotate     ?? null,
       });
-      loadWaterSuggestion(plant);
+      loadScheduleSuggestions(plant, forceWaterSuggestion);
     } else {
       setSelPlant(null);
+      setPickingPlant(false);
+      setSuggestions({ water: null, wipeLeaves: null, fertilise: null, rotate: null });
       setSched({ water: 7, wipeLeaves: null, fertilise: null, rotate: null });
       setLoadingInterval(false);
     }
@@ -253,20 +269,31 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
 
   function pickPlant(p) {
     setSelPlant(p);
+    setPickingPlant(false);
+    setSuggestions({ water: null, wipeLeaves: null, fertilise: null, rotate: null });
     setSched({
       water:      p.schedule?.water      ?? 7,
       wipeLeaves: p.schedule?.wipeLeaves ?? null,
       fertilise:  p.schedule?.fertilise  ?? null,
       rotate:     p.schedule?.rotate     ?? null,
     });
-    loadWaterSuggestion(p);
+    loadScheduleSuggestions(p, false);
   }
 
   function handleSave() {
-    if (!selPlant) return;
-    onSave(selPlant.id, sched);
+    if (!selPlant || sched.water < 1) return;
+    const finalSched = { ...sched };
+    for (const key of ['wipeLeaves', 'fertilise', 'rotate']) {
+      if (finalSched[key] !== null && finalSched[key] < 1) return;
+    }
+    onSave(selPlant.id, finalSched);
     onClose();
   }
+
+  const canSave = !!selPlant && sched.water >= 1 &&
+    ['wipeLeaves', 'fertilise', 'rotate'].every((k) => sched[k] === null || sched[k] >= 1);
+
+  const pickerLabel = selPlant ? (selPlant.common_name || selPlant.species || 'Plant') : null;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -287,26 +314,70 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
             </Pressable>
           </View>
 
-          {/* Plant picker — new mode */}
+          {/* Plant picker — iOS-style tappable field */}
           {isNew && (
             <View style={styles.sheetSection}>
               <Text style={styles.sheetSectionLabel}>Plant</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.plantRow}>
-                {allPlants.map((p) => {
-                  const active = selPlant?.id === p.id;
-                  return (
-                    <Pressable key={p.id} onPress={() => pickPlant(p)} style={[styles.plantChip, active && styles.plantChipActive]}>
-                      <Text style={[styles.plantChipText, active && styles.plantChipTextActive]} numberOfLines={1}>
-                        {p.common_name || p.species || 'Plant'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+
+              <Pressable
+                onPress={() => setPickingPlant((v) => !v)}
+                style={({ pressed }) => [styles.plantPickerRow, pressed && { opacity: 0.82 }]}
+              >
+                <View style={[styles.plantPickerIcon, !!selPlant && styles.plantPickerIconActive]}>
+                  <Ico.Leaf color={selPlant ? colors.pine : colors.textMute} size={14} />
+                </View>
+                <Text
+                  style={[styles.plantPickerText, !selPlant && styles.plantPickerPlaceholder]}
+                  numberOfLines={1}
+                >
+                  {pickerLabel ?? 'Choose plant'}
+                </Text>
+                <View style={{ transform: [{ rotate: pickingPlant ? '-90deg' : '90deg' }] }}>
+                  <Ico.Chevron color={colors.textMute} size={12} />
+                </View>
+              </Pressable>
+
+              {pickingPlant && (
+                <ScrollView
+                  style={styles.plantListScroll}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {allPlants.map((p) => {
+                    const active = selPlant?.id === p.id;
+                    const displayName = p.common_name || p.species || 'Plant';
+                    const showSpecies = !!p.common_name && !!p.species;
+                    return (
+                      <Pressable
+                        key={p.id}
+                        onPress={() => pickPlant(p)}
+                        style={({ pressed }) => [
+                          styles.plantListRow,
+                          active && styles.plantListRowActive,
+                          pressed && { opacity: 0.82 },
+                        ]}
+                      >
+                        <View style={[styles.plantListIcon, active && styles.plantListIconActive]}>
+                          <Ico.Leaf color={active ? colors.pine : colors.textMute} size={14} />
+                        </View>
+                        <View style={styles.plantListBody}>
+                          <Text style={[styles.plantListName, active && styles.plantListNameActive]} numberOfLines={1}>
+                            {displayName}
+                          </Text>
+                          {showSpecies && (
+                            <Text style={styles.plantListSpecies} numberOfLines={1}>{p.species}</Text>
+                          )}
+                        </View>
+                        {active && <Ico.Check color={colors.pine} size={13} />}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              )}
             </View>
           )}
 
-          {/* Water interval */}
+          {/* Water interval — free text input */}
           <View style={styles.sheetSection}>
             <View style={styles.taskTypeRow}>
               <View style={[styles.taskTypeIcon, { backgroundColor: colors.bgMint }]}>
@@ -315,25 +386,33 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
               <Text style={styles.taskTypeLabel}>Water every</Text>
             </View>
             {loadingInterval ? (
-              <Text style={styles.intervalLoading}>Calculating suggestion…</Text>
+              <Text style={styles.intervalLoading}>Calculating suggestions…</Text>
             ) : (
-              <View style={styles.intervalRow}>
-                {INTERVAL_OPTIONS.map((n) => {
-                  const active = sched.water === n;
-                  return (
-                    <Pressable key={n} onPress={() => setSched((s) => ({ ...s, water: n }))}
-                      style={[styles.intervalChip, active && styles.intervalChipActive]}>
-                      <Text style={[styles.intervalChipText, active && styles.intervalChipTextActive]}>
-                        {n} days
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <View style={styles.waterInputWrap}>
+                <View style={styles.waterInputRow}>
+                  <TextInput
+                    style={styles.waterInput}
+                    keyboardType="number-pad"
+                    value={sched.water > 0 ? String(sched.water) : ''}
+                    onChangeText={(v) => {
+                      const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
+                      setSched((s) => ({ ...s, water: isNaN(n) ? 0 : n }));
+                    }}
+                    maxLength={3}
+                    selectTextOnFocus
+                    placeholder="—"
+                    placeholderTextColor={colors.textMute}
+                  />
+                  <Text style={styles.waterInputUnit}>days</Text>
+                </View>
+                {suggestions.water != null && suggestions.water !== sched.water && (
+                  <Text style={styles.waterInputHint}>Suggested: {suggestions.water} days</Text>
+                )}
               </View>
             )}
           </View>
 
-          {/* Extra task types */}
+          {/* Extra task types — free text input + AI suggestion hint */}
           {EXTRA_TASKS.map(({ key, label, iconBg, iconColor }) => {
             const enabled = sched[key] !== null;
             return (
@@ -343,24 +422,37 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
                     <TaskIcon taskKey={key} color={iconColor} size={16} />
                   </View>
                   <Text style={styles.taskTypeLabel}>{label}</Text>
-                  <Pressable onPress={() => setSched((s) => ({ ...s, [key]: enabled ? null : 7 }))}
-                    style={[styles.toggle, enabled && styles.toggleOn]}>
+                  <Pressable
+                    onPress={() => setSched((s) => ({
+                      ...s,
+                      [key]: enabled ? null : (suggestions[key] ?? 7),
+                    }))}
+                    style={[styles.toggle, enabled && styles.toggleOn]}
+                  >
                     <View style={[styles.toggleThumb, enabled && styles.toggleThumbOn]} />
                   </Pressable>
                 </View>
                 {enabled && (
-                  <View style={styles.intervalRow}>
-                    {INTERVAL_OPTIONS.map((n) => {
-                      const active = sched[key] === n;
-                      return (
-                        <Pressable key={n} onPress={() => setSched((s) => ({ ...s, [key]: n }))}
-                          style={[styles.intervalChip, active && styles.intervalChipActive]}>
-                          <Text style={[styles.intervalChipText, active && styles.intervalChipTextActive]}>
-                            {n} days
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                  <View style={styles.waterInputWrap}>
+                    <View style={styles.waterInputRow}>
+                      <TextInput
+                        style={styles.waterInput}
+                        keyboardType="number-pad"
+                        value={sched[key] > 0 ? String(sched[key]) : ''}
+                        onChangeText={(v) => {
+                          const n = parseInt(v.replace(/[^0-9]/g, ''), 10);
+                          setSched((s) => ({ ...s, [key]: isNaN(n) ? 0 : n }));
+                        }}
+                        maxLength={3}
+                        selectTextOnFocus
+                        placeholder="—"
+                        placeholderTextColor={colors.textMute}
+                      />
+                      <Text style={styles.waterInputUnit}>days</Text>
+                    </View>
+                    {suggestions[key] != null && suggestions[key] !== sched[key] && (
+                      <Text style={styles.waterInputHint}>Suggested: {suggestions[key]} days</Text>
+                    )}
                   </View>
                 )}
               </View>
@@ -369,8 +461,12 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
 
           <Pressable
             onPress={handleSave}
-            disabled={!selPlant}
-            style={({ pressed }) => [styles.sheetSaveBtn, !selPlant && styles.sheetSaveBtnDisabled, pressed && { opacity: 0.85 }]}
+            disabled={!canSave}
+            style={({ pressed }) => [
+              styles.sheetSaveBtn,
+              !canSave && styles.sheetSaveBtnDisabled,
+              pressed && { opacity: 0.85 },
+            ]}
           >
             <Text style={styles.sheetSaveBtnText}>Save schedule</Text>
           </Pressable>
@@ -381,7 +477,7 @@ function ScheduleSheet({ visible, plant, allPlants, onClose, onSave }) {
 }
 
 // ─── Screen ───────────────────────────────────────────────────
-export default function GardenScreen({ navigation }) {
+export default function GardenScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [history, setHistory]         = useState([]);
   const [tasks, setTasks]             = useState([]);
@@ -393,15 +489,34 @@ export default function GardenScreen({ navigation }) {
   const [selectedDay, setSelectedDay] = useState(null);
   const [showSheet, setShowSheet]     = useState(false);
   const [editingPlant, setEditingPlant] = useState(null);
+  const [sheetFromReport, setSheetFromReport] = useState(false);
 
   const calAnim = useRef(new Animated.Value(0)).current;
+  // Ref so useFocusEffect (memoized with []) always reads the latest route param
+  const openScheduleForRef = useRef(route.params?.openScheduleFor ?? null);
+  openScheduleForRef.current = route.params?.openScheduleFor ?? null;
 
   useFocusEffect(
     useCallback(() => {
       async function load() {
+        // Capture param at start of async chain to avoid stale reads
+        const openFor = openScheduleForRef.current;
+
         const h = await getHistory();
         setHistory(h);
         setTasks(buildTasksFromHistory(h));
+
+        // Auto-open schedule sheet when navigated here from Report screen
+        if (openFor) {
+          const target = h.find((p) => p.id === openFor);
+          if (target) {
+            setEditingPlant(target);
+            setSheetFromReport(true);
+            setShowSheet(true);
+          }
+          navigation.setParams({ openScheduleFor: undefined });
+        }
+
         // Auto-schedule water interval for existing plants that have care text but no schedule yet
         const unscheduled = h.filter((p) => p.water && !p.schedule?.water);
         if (unscheduled.length > 0) {
@@ -526,7 +641,7 @@ export default function GardenScreen({ navigation }) {
               </Text>
             </View>
             <Pressable
-              onPress={() => { setEditingPlant(null); setShowSheet(true); }}
+              onPress={() => { setEditingPlant(null); setSheetFromReport(false); setShowSheet(true); }}
               style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.7 }]}
             >
               <Ico.Plus color={colors.pine} size={18} />
@@ -641,7 +756,7 @@ export default function GardenScreen({ navigation }) {
             <Text style={styles.sectionToday}>{selectedDay ? selectedLabel : 'Today'}</Text>
             {todayTasks.map((t) => (
               <TaskRow key={t.id} task={t} done={completed.has(t.id)} onToggle={handleToggle}
-                onEdit={(p) => { setEditingPlant(p); setShowSheet(true); }} />
+                onEdit={(p) => { setEditingPlant(p); setSheetFromReport(false); setShowSheet(true); }} />
             ))}
           </View>
         )}
@@ -652,7 +767,7 @@ export default function GardenScreen({ navigation }) {
             <Text style={styles.sectionUpcoming}>Upcoming</Text>
             {upcomingTasks.map((t) => (
               <TaskRow key={t.id} task={t} done={completed.has(t.id)} onToggle={handleToggle}
-                onEdit={(p) => { setEditingPlant(p); setShowSheet(true); }} />
+                onEdit={(p) => { setEditingPlant(p); setSheetFromReport(false); setShowSheet(true); }} />
             ))}
           </View>
         )}
@@ -674,8 +789,9 @@ export default function GardenScreen({ navigation }) {
         visible={showSheet}
         plant={editingPlant}
         allPlants={history}
-        onClose={() => setShowSheet(false)}
+        onClose={() => { setShowSheet(false); setSheetFromReport(false); }}
         onSave={handleSaveSchedule}
+        forceWaterSuggestion={sheetFromReport}
       />
     </View>
   );
@@ -826,16 +942,67 @@ const styles = StyleSheet.create({
   sheetSection: { marginBottom: 18 },
   sheetSectionLabel: { fontFamily: fonts.mono, fontSize: 10, color: colors.textMute, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 },
 
-  // Plant picker
-  plantRow: { gap: 8, paddingBottom: 4 },
-  plantChip: {
-    height: 36, paddingHorizontal: 14, borderRadius: radii.pill,
-    backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line,
-    alignItems: 'center', justifyContent: 'center', maxWidth: 160,
+  // Plant picker — vertical list
+  plantListScroll: { maxHeight: 192, marginTop: 2 },
+  plantListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    marginBottom: 4,
   },
-  plantChipActive: { backgroundColor: colors.bgMint, borderColor: 'rgba(92,138,92,0.5)' },
-  plantChipText: { fontFamily: fonts.sansBold, fontSize: 13, color: colors.textSoft },
-  plantChipTextActive: { color: colors.pine },
+  plantListRowActive: {
+    backgroundColor: colors.bgMint,
+    borderColor: 'rgba(92,138,92,0.35)',
+  },
+  plantListIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.bgSage,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  plantListIconActive: { backgroundColor: colors.bgMint },
+  plantListBody: { flex: 1, minWidth: 0 },
+  plantListName: {
+    fontFamily: fonts.serifItalic,
+    fontStyle: 'italic',
+    fontSize: 15,
+    lineHeight: 19,
+    color: colors.text,
+    letterSpacing: -0.1,
+  },
+  plantListNameActive: { color: colors.pine },
+  plantListSpecies: {
+    fontFamily: fonts.sans,
+    fontSize: 11.5,
+    color: colors.textMute,
+    marginTop: 1,
+  },
+
+  // Plant picker row (iOS-style tappable selector)
+  plantPickerRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    height: 48, paddingHorizontal: 14,
+    borderRadius: radii.xl, borderWidth: 1, borderColor: colors.line,
+    backgroundColor: colors.bg,
+  },
+  plantPickerIcon: {
+    width: 26, height: 26, borderRadius: 7,
+    backgroundColor: colors.bgSage, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  plantPickerIconActive: { backgroundColor: colors.bgMint },
+  plantPickerText: {
+    flex: 1, fontFamily: fonts.serifItalic, fontStyle: 'italic',
+    fontSize: 15, color: colors.text, letterSpacing: -0.1,
+  },
+  plantPickerPlaceholder: { fontFamily: fonts.sans, fontStyle: 'normal', color: colors.textMute },
 
   // Task type row (inside sheet)
   taskTypeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
@@ -848,13 +1015,45 @@ const styles = StyleSheet.create({
   toggleThumb: { width: 17, height: 17, borderRadius: 9, backgroundColor: colors.textMute },
   toggleThumbOn: { backgroundColor: colors.pine, alignSelf: 'flex-end' },
 
-  // Interval chips
+  // Interval chips (used by extra tasks only now)
   intervalLoading: { fontFamily: fonts.sans, fontSize: 12, color: colors.textMute, paddingVertical: 10 },
   intervalRow: { flexDirection: 'row', gap: 8 },
   intervalChip: { flex: 1, height: 38, borderRadius: radii.lg, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
   intervalChipActive: { backgroundColor: colors.bgMint, borderColor: 'rgba(92,138,92,0.5)' },
   intervalChipText: { fontFamily: fonts.sansBold, fontSize: 12, color: colors.textSoft },
   intervalChipTextActive: { color: colors.pine },
+
+  // Water free-input
+  waterInputWrap: { gap: 6 },
+  waterInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  waterInput: {
+    width: 80,
+    height: 48,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 14,
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  waterInputUnit: {
+    fontFamily: fonts.sansBold,
+    fontSize: 14,
+    color: colors.textSoft,
+  },
+  waterInputHint: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.textMute,
+    paddingHorizontal: 2,
+  },
 
   // Save button
   sheetSaveBtn: { height: 52, borderRadius: radii.xl, backgroundColor: colors.pine, alignItems: 'center', justifyContent: 'center', marginTop: 4 },

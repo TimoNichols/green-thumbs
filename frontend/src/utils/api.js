@@ -64,6 +64,21 @@ export async function fetchWaterInterval(waterText) {
   return response.json();
 }
 
+export async function fetchCareSchedule(plantName, careData = {}) {
+  const formData = new FormData();
+  formData.append("plant_name", plantName);
+  formData.append("care_data", JSON.stringify(careData));
+  const response = await fetch(`${API_BASE_URL}/parse-schedule`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || `Server error ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function fetchDiagnosis(species, symptom, care = null) {
   const formData = new FormData();
   formData.append("species", species);

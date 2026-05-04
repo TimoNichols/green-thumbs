@@ -7,9 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
-  LayoutAnimation,
-  UIManager,
-  Platform,
   Modal,
   Animated,
 } from 'react-native';
@@ -23,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, fonts, radii } from '../utils/theme';
 import * as Ico from '../components/Ico';
 import { addToHistory, updateHistory, getHistory, uploadPlantPhoto } from '../utils/history';
-import { fetchDiagnosis, fetchWaterInterval } from '../utils/api';
+import { fetchDiagnosis } from '../utils/api';
 
 const SCREEN_W = Dimensions.get('window').width;
 const HERO_H = 260;
@@ -161,12 +158,8 @@ export default function ReportScreen({ navigation, route }) {
   const [showSymptomPicker, setShowSymptomPicker] = useState(false);
   const [pickedSymptom, setPickedSymptom] = useState(null);
   const [diagnosing, setDiagnosing] = useState(false);
-  const [expandedTile, setExpandedTile] = useState(null);
-  const [fetchingInterval, setFetchingInterval] = useState(false);
-  const [scheduleConfirm, setScheduleConfirm] = useState({ visible: false, intervalDays: 7, label: '' });
-  const [schedulingWater, setSchedulingWater] = useState(false);
-  const toastAnim = useRef(new Animated.Value(0)).current;
-  const [toastVisible, setToastVisible] = useState(false);
+  const [expandedTileData, setExpandedTileData] = useState(null);
+  const tileOverlayAnim = useRef(new Animated.Value(0)).current;
 
   // When returning from a scan of a manual plant, re-fetch to pick up merged care data
   useFocusEffect(
@@ -285,55 +278,41 @@ export default function ReportScreen({ navigation, route }) {
   }
 
   function handleTilePress(tileKey) {
-    if (Platform.OS === 'android') {
-      UIManager.setLayoutAnimationEnabledExperimental?.(true);
-    }
-    LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity'));
-    setExpandedTile((prev) => (prev === tileKey ? null : tileKey));
+    const tile = CARE_TILES.find(t => t.tileKey === tileKey);
+    setExpandedTileData({
+      ...tile,
+      hasSchedule: !!(currentReport?.schedule?.water),
+      canSchedule: tile.tileKey === 'water' && !!currentReport?.id,
+    });
+    tileOverlayAnim.setValue(0);
+    Animated.spring(tileOverlayAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 260,
+      friction: 22,
+    }).start();
   }
 
-  async function handleScheduleWater() {
-    if (!report.water || fetchingInterval) return;
-    setFetchingInterval(true);
-    try {
-      const { intervalDays, label } = await fetchWaterInterval(report.water);
-      setScheduleConfirm({ visible: true, intervalDays, label });
-    } catch (e) {
-      Alert.alert('Could not fetch interval', e.message || 'Please try again.');
-    } finally {
-      setFetchingInterval(false);
-    }
+  function handleCloseTile() {
+    Animated.timing(tileOverlayAnim, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => setExpandedTileData(null));
   }
 
-  async function handleConfirmSchedule() {
-    if (!currentReport?.id) return;
-    setSchedulingWater(true);
-    try {
-      const newSchedule = { ...(currentReport.schedule ?? {}), water: scheduleConfirm.intervalDays };
-      const updated = await updateHistory(currentReport.id, { schedule: newSchedule });
-      setCurrentReport(updated ?? { ...currentReport, schedule: newSchedule });
-      setScheduleConfirm({ visible: false, intervalDays: 7, label: '' });
-      showToast();
-    } catch (e) {
-      Alert.alert('Failed to save schedule', e.message || 'Please try again.');
-    } finally {
-      setSchedulingWater(false);
-    }
-  }
-
-  function showToast() {
-    setToastVisible(true);
-    Animated.sequence([
-      Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.delay(1800),
-      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start(() => setToastVisible(false));
-  }
-
-  function nextDueDateLabel(intervalDays) {
-    const d = new Date();
-    d.setDate(d.getDate() + intervalDays);
-    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  function handleTileSchedule() {
+    Animated.timing(tileOverlayAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      setExpandedTileData(null);
+      navigation.navigate('MainTabs', {
+        screen: 'Garden',
+        params: { openScheduleFor: report.id },
+      });
+    });
   }
 
   return (
@@ -569,19 +548,13 @@ export default function ReportScreen({ navigation, route }) {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Care guide</Text>
             <View style={styles.careGrid}>
-              {CARE_TILES.map((tile) => {
-                const isExpanded = expandedTile === tile.tileKey;
-                return (
-                  <CareTile
-                    key={tile.label}
-                    {...tile}
-                    expanded={isExpanded}
-                    onPress={() => handleTilePress(tile.tileKey)}
-                    onSchedule={tile.tileKey === 'water' && currentReport?.id ? handleScheduleWater : null}
-                    hasSchedule={!!(currentReport?.schedule?.water)}
-                  />
-                );
-              })}
+              {CARE_TILES.map((tile) => (
+                <CareTile
+                  key={tile.label}
+                  {...tile}
+                  onPress={() => handleTilePress(tile.tileKey)}
+                />
+              ))}
             </View>
 
             {report.placement && (
@@ -638,56 +611,88 @@ export default function ReportScreen({ navigation, route }) {
         )}
       </ScrollView>
 
-      {/* ── Schedule confirmation modal ───────────────────────────── */}
+      {/* ── Expanded care tile overlay ────────────────────────────── */}
       <Modal
-        visible={scheduleConfirm.visible}
+        visible={!!expandedTileData}
         transparent
-        animationType="fade"
-        onRequestClose={() => setScheduleConfirm((s) => ({ ...s, visible: false }))}
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={handleCloseTile}
       >
-        <View style={styles.modalWrapper}>
-          <Pressable
-            style={StyleSheet.absoluteFillObject}
-            onPress={() => setScheduleConfirm((s) => ({ ...s, visible: false }))}
-          />
-          <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Schedule watering?</Text>
-          <Text style={styles.modalPlant}>
-            {report.common_name || report.species}
-          </Text>
-          <Text style={styles.modalInterval}>
-            {scheduleConfirm.label || `Every ${scheduleConfirm.intervalDays} days`}
-          </Text>
-          <Text style={styles.modalNext}>
-            Next due: {nextDueDateLabel(scheduleConfirm.intervalDays)}
-          </Text>
-          <View style={styles.modalBtns}>
-            <Pressable
-              onPress={() => setScheduleConfirm((s) => ({ ...s, visible: false }))}
-              style={({ pressed }) => [styles.modalCancelBtn, pressed && { opacity: 0.7 }]}
+        {expandedTileData ? (
+          <View style={styles.tileOverlayWrapper}>
+            {/* Scrim */}
+            <Animated.View
+              style={[
+                StyleSheet.absoluteFillObject,
+                styles.tileScrim,
+                {
+                  opacity: tileOverlayAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 0.28],
+                  }),
+                },
+              ]}
             >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={handleConfirmSchedule}
-              disabled={schedulingWater}
-              style={({ pressed }) => [styles.modalConfirmBtn, pressed && { opacity: 0.85 }, schedulingWater && { opacity: 0.6 }]}
-            >
-              <Text style={styles.modalConfirmText}>
-                {schedulingWater ? 'Saving…' : 'Confirm'}
-              </Text>
-            </Pressable>
+              <Pressable style={StyleSheet.absoluteFillObject} onPress={handleCloseTile} />
+            </Animated.View>
+
+            {/* Expanded card */}
+            <View style={styles.tileOverlayPositioner} pointerEvents="box-none">
+              <Animated.View
+                style={[
+                  styles.tileOverlayCard,
+                  {
+                    opacity: tileOverlayAnim.interpolate({
+                      inputRange: [0, 0.4, 1],
+                      outputRange: [0, 0.7, 1],
+                    }),
+                    transform: [
+                      {
+                        scale: tileOverlayAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.88, 1],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                {/* Header: icon + label + close X */}
+                <View style={styles.tileOverlayHeader}>
+                  <View style={styles.careIconBadge}>
+                    <expandedTileData.Icon color={expandedTileData.iconColor} size={18} />
+                  </View>
+                  <Text style={styles.tileOverlayLabel}>{expandedTileData.label}</Text>
+                  <Pressable
+                    onPress={handleCloseTile}
+                    style={({ pressed }) => [styles.tileOverlayCloseBtn, pressed && { opacity: 0.7 }]}
+                  >
+                    <Text style={styles.tileOverlayCloseText}>✕</Text>
+                  </Pressable>
+                </View>
+
+                {/* Full untruncated text */}
+                <Text style={styles.tileOverlayValue}>{expandedTileData.value}</Text>
+
+                {/* Water: schedule button */}
+                {expandedTileData.tileKey === 'water' && expandedTileData.canSchedule && (
+                  <Pressable
+                    onPress={handleTileSchedule}
+                    style={({ pressed }) => [styles.tileScheduleBtn, pressed && { opacity: 0.85 }]}
+                  >
+                    <Ico.Drop color={colors.pine} size={13} />
+                    <Text style={styles.tileScheduleBtnText}>
+                      {expandedTileData.hasSchedule ? 'Update schedule →' : 'Schedule watering →'}
+                    </Text>
+                  </Pressable>
+                )}
+              </Animated.View>
+            </View>
           </View>
-          </View>
-        </View>
+        ) : null}
       </Modal>
 
-      {/* ── Toast ────────────────────────────────────────────────── */}
-      {toastVisible && (
-        <Animated.View style={[styles.toast, { opacity: toastAnim }]} pointerEvents="none">
-          <Text style={styles.toastText}>Watering scheduled</Text>
-        </Animated.View>
-      )}
     </View>
   );
 }
@@ -953,9 +958,6 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
-  careTileExpanded: {
-    width: '100%',
-  },
   scheduleWaterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -971,112 +973,81 @@ const styles = StyleSheet.create({
     color: colors.pine,
   },
 
-  // ── Schedule confirmation modal
-  modalWrapper: {
+  // ── Expanded tile overlay
+  tileOverlayWrapper: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(14,26,18,0.55)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
-  modalCard: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  tileScrim: {
+    backgroundColor: '#0E1A12',
+  },
+  tileOverlayPositioner: {
+    // centers the card vertically within the wrapper
+  },
+  tileOverlayCard: {
     backgroundColor: colors.bgRaise,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
+    borderRadius: radii['2xl'],
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 18,
     shadowColor: '#0F1A12',
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: -8 },
-    elevation: 10,
+    shadowOpacity: 0.26,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 14,
   },
-  modalTitle: {
-    fontFamily: fonts.serifItalic,
-    fontStyle: 'italic',
-    fontSize: 22,
-    color: colors.text,
-    letterSpacing: -0.2,
-    marginBottom: 16,
-  },
-  modalPlant: {
-    fontFamily: fonts.sansBold,
-    fontSize: 13,
-    color: colors.textSoft,
-    marginBottom: 4,
-  },
-  modalInterval: {
-    fontFamily: fonts.serif,
-    fontSize: 26,
-    lineHeight: 30,
-    color: colors.text,
-    letterSpacing: -0.3,
-    marginBottom: 6,
-  },
-  modalNext: {
-    fontFamily: fonts.sans,
-    fontSize: 13,
-    color: colors.textMute,
-    marginBottom: 24,
-  },
-  modalBtns: {
+  tileOverlayHeader: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  modalCancelBtn: {
+  tileOverlayLabel: {
     flex: 1,
-    height: 50,
+    fontFamily: fonts.mono,
+    fontSize: 9.5,
+    color: colors.textMute,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginLeft: 10,
+  },
+  tileOverlayCloseBtn: {
+    width: 28,
+    height: 28,
     borderRadius: 14,
+    backgroundColor: colors.bgSage,
     borderWidth: 1,
     borderColor: colors.line,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.bg,
   },
-  modalCancelText: {
+  tileOverlayCloseText: {
     fontFamily: fonts.sansBold,
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textSoft,
   },
-  modalConfirmBtn: {
-    flex: 2,
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: colors.pine,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tileOverlayValue: {
+    fontFamily: fonts.serif,
+    fontSize: 17,
+    lineHeight: 24,
+    color: colors.text,
+    letterSpacing: -0.2,
   },
-  modalConfirmText: {
+  tileScheduleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
+  tileScheduleBtnText: {
     fontFamily: fonts.sansBold,
-    fontSize: 14,
-    color: '#fff',
-    letterSpacing: 0.2,
+    fontSize: 12.5,
+    color: colors.pine,
   },
 
-  // ── Toast
-  toast: {
-    position: 'absolute',
-    bottom: 48,
-    alignSelf: 'center',
-    backgroundColor: colors.forest,
-    borderRadius: 100,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 6,
-  },
-  toastText: {
-    fontFamily: fonts.sansBold,
-    fontSize: 13,
-    color: '#F4F1E8',
-    letterSpacing: 0.2,
-  },
   sectionLabel: {
     fontFamily: fonts.mono,
     fontSize: 10.5,

@@ -180,6 +180,57 @@ async def parse_water_interval(water_text: str) -> dict:
     return {"intervalDays": 7, "label": "Every 7 days"}
 
 
+async def parse_care_schedule(plant_name: str, care_data: dict) -> dict:
+    """Return suggested watering/care intervals for all four task types."""
+    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
+
+    care_lines = []
+    if care_data.get("water"):
+        care_lines.append(f"- Watering: {care_data['water']}")
+    if care_data.get("sunlight"):
+        care_lines.append(f"- Sunlight: {care_data['sunlight']}")
+    if care_data.get("humidity"):
+        care_lines.append(f"- Humidity: {care_data['humidity']}")
+    if care_data.get("soil"):
+        care_lines.append(f"- Soil: {care_data['soil']}")
+
+    care_summary = "\n".join(care_lines) if care_lines else "No care data available."
+
+    msg = await client.messages.create(
+        model=CLAUDE_MODEL,
+        max_tokens=200,
+        messages=[{
+            "role": "user",
+            "content": (
+                f"For a {plant_name} with these care requirements:\n{care_summary}\n\n"
+                "Suggest how often (in days) to perform each care task. "
+                "Respond with valid JSON only (no extra text):\n"
+                '{"water": {"intervalDays": <int>, "label": "<e.g. Every 7 days>"}, '
+                '"wipeLeaves": {"intervalDays": <int>, "label": "<e.g. Every 14 days>"}, '
+                '"fertilise": {"intervalDays": <int>, "label": "<e.g. Every 30 days>"}, '
+                '"rotate": {"intervalDays": <int>, "label": "<e.g. Every 21 days>"}}'
+            ),
+        }],
+    )
+
+    text = msg.content[0].text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+    return {
+        "water":      {"intervalDays": 7,  "label": "Every 7 days"},
+        "wipeLeaves": {"intervalDays": 14, "label": "Every 14 days"},
+        "fertilise":  {"intervalDays": 30, "label": "Every 30 days"},
+        "rotate":     {"intervalDays": 21, "label": "Every 3 weeks"},
+    }
+
+
 async def diagnose_text(species: str, symptom: str, care: dict | None = None) -> dict:
     """Return a text-only Claude diagnosis for a species + symptom."""
     client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)

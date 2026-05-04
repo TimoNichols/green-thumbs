@@ -59,10 +59,16 @@ function SwipeableRow({ children, onDelete }) {
       tx.value = Math.min(0, Math.max(-DELETE_W, startX.value + e.translationX));
     })
     .onEnd((e) => {
-      const shouldReveal = tx.value < -(DELETE_W / 2) || e.velocityX < -500;
+      const displaced = tx.value < -8;
+      const shouldReveal = tx.value < -(DELETE_W / 2) || (displaced && e.velocityX < -400);
       tx.value = shouldReveal
         ? withTiming(-DELETE_W, { duration: 180 })
         : withSpring(0, { damping: 20, stiffness: 200 });
+    })
+    .onFinalize((_, success) => {
+      if (!success) {
+        tx.value = withSpring(0, { damping: 20, stiffness: 200 });
+      }
     });
 
   const animStyle = useAnimatedStyle(() => ({
@@ -379,9 +385,11 @@ export default function MyPlantsScreen({ navigation }) {
   const [wishlist, setWishlistItems] = useState([]);
   const [filter, setFilter] = useState('All');
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
+      setReloadKey((k) => k + 1);
       getHistory().then(setItems);
       getWishlist().then(setWishlistItems);
     }, [])
@@ -499,7 +507,7 @@ export default function MyPlantsScreen({ navigation }) {
     <View style={styles.root}>
       <FlatList
         data={listData}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => `${reloadKey}-${item.id}`}
         renderItem={({ item }) =>
           tab === 'plants' ? (
             <SwipeableRow onDelete={() => handleDeletePlant(item.id)}>
