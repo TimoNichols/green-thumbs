@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radii } from '../utils/theme';
 import { getHistory } from '../utils/history';
 import { getActivity } from '../utils/activity';
+import { getNotificationsEnabled, setNotificationsEnabled } from '../utils/notifications';
 import * as Ico from '../components/Ico';
 import HomeEnvironmentCard from '../components/HomeEnvironmentCard';
 import { useAuth } from '../context/AuthContext';
@@ -163,12 +164,18 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      Promise.all([getHistory(), getActivity()]).then(([h, a]) => {
+      Promise.all([getHistory(), getActivity(), getNotificationsEnabled()]).then(([h, a, notifEnabled]) => {
         setUnlocked(computeAchievements(h));
         setEngagement(computeEngagementStats(h, a));
+        setNotificationsOn(notifEnabled);
       });
     }, [])
   );
+
+  async function handleToggleNotifications(val) {
+    setNotificationsOn(val);
+    await setNotificationsEnabled(val);
+  }
 
   const topPad = Math.max(56, insets.top + 8);
 
@@ -227,27 +234,24 @@ export default function ProfileScreen() {
         ))}
       </ScrollView>
 
+      {/* ── Notifications ──────────────────────────────── */}
+      <Text style={styles.sectionLabel}>Notifications</Text>
+      <View style={styles.settingsCard}>
+        <SettingsRow
+          icon={Ico.Bell}
+          label="Care reminders"
+          toggle
+          toggleValue={notificationsOn}
+          onToggleChange={handleToggleNotifications}
+        />
+      </View>
+
       {/* ── Settings ───────────────────────────────────── */}
       <Text style={styles.sectionLabel}>Settings</Text>
       <View style={styles.settingsCard}>
         <SettingsRow
-          icon={Ico.Bell}
-          label="Notifications"
-          toggle
-          toggleValue={notificationsOn}
-          onToggleChange={setNotificationsOn}
-          onPress={comingSoon}
-        />
-        <SettingsRow
-          icon={Ico.Reminder}
-          label="Watering reminders"
-          showBorder
-          onPress={comingSoon}
-        />
-        <SettingsRow
           icon={Ico.Share}
           label="Share my garden"
-          showBorder
           onPress={comingSoon}
         />
         <SettingsRow

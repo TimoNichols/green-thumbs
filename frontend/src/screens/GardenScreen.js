@@ -24,6 +24,7 @@ import { colors, fonts, radii } from '../utils/theme';
 import { getHistory, updateHistory } from '../utils/history';
 import { fetchWaterInterval, fetchCareSchedule } from '../utils/api';
 import { logActivity } from '../utils/activity';
+import { scheduleTaskNotification, cancelTaskNotification } from '../utils/notifications';
 import * as Ico from '../components/Ico';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -630,10 +631,26 @@ export default function GardenScreen({ navigation, route }) {
     if (isMarking) {
       const task = tasks.find((t) => t.id === id);
       if (task) {
+        // Cancel the notification that was due today
+        await cancelTaskNotification(task.plant.notification_ids?.[task.taskKey]);
+
         logActivity({ plantId: task.plantId, type: task.taskKey });
         const todayStr = new Date().toISOString().split('T')[0];
         const newLastCare = { ...(task.plant.lastCare ?? {}), [task.taskKey]: todayStr };
         await updateHistory(task.plantId, { lastCare: newLastCare });
+
+        // Schedule the next occurrence
+        const intervalDays = task.plant.schedule?.[task.taskKey];
+        if (intervalDays) {
+          const nextDue = new Date();
+          nextDue.setDate(nextDue.getDate() + intervalDays);
+          const notifId = await scheduleTaskNotification(task.plantName, task.taskLabel, nextDue);
+          if (notifId) {
+            const newNotifIds = { ...(task.plant.notification_ids ?? {}), [task.taskKey]: notifId };
+            await updateHistory(task.plantId, { notification_ids: newNotifIds });
+          }
+        }
+
         const fresh = await getHistory();
         setHistory(fresh);
         setTasks(buildTasksFromHistory(fresh));
@@ -644,6 +661,10 @@ export default function GardenScreen({ navigation, route }) {
   async function handleReschedule(task) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { taskKey, plant } = task;
+
+    // Cancel old notification and replace with one for the new date
+    await cancelTaskNotification(plant.notification_ids?.[taskKey]);
+
     const anchorStr = plant.lastCare?.[taskKey] ?? null;
     const anchor = anchorStr
       ? new Date(anchorStr)
@@ -652,16 +673,61 @@ export default function GardenScreen({ navigation, route }) {
     anchor.setDate(anchor.getDate() + 1);
     const newLastCare = { ...(plant.lastCare ?? {}), [taskKey]: anchor.toISOString().split('T')[0] };
     await updateHistory(task.plantId, { lastCare: newLastCare });
+
+    const intervalDays = plant.schedule?.[taskKey];
+    if (intervalDays) {
+      const newDue = new Date(anchor);
+      newDue.setDate(anchor.getDate() + intervalDays);
+      const notifId = await scheduleTaskNotification(task.plantName, task.taskLabel, newDue);
+      if (notifId) {
+        const newNotifIds = { ...(plant.notification_ids ?? {}), [taskKey]: notifId };
+        await updateHistory(task.plantId, { notification_ids: newNotifIds });
+      }
+    }
+
     const fresh = await getHistory();
     setHistory(fresh);
     setTasks(buildTasksFromHistory(fresh));
   }
 
   async function handleSaveSchedule(plantId, schedule) {
+    // Cancel all existing notifications for this plant before replacing them
+    const plant = history.find((p) => p.id === plantId);
+    for (const notifId of Object.values(plant?.notification_ids ?? {})) {
+      await cancelTaskNotification(notifId);
+    }
+
     await updateHistory(plantId, { schedule });
     const fresh = await getHistory();
     setHistory(fresh);
     setTasks(buildTasksFromHistory(fresh));
+
+    // Schedule a notification for each enabled task type
+    const freshPlant = fresh.find((p) => p.id === plantId);
+    if (!freshPlant) return;
+
+    const newNotifIds = {};
+    for (const { key, label } of TASK_TYPES) {
+      const intervalDays = schedule[key] ?? null;
+      if (!intervalDays) continue;
+
+      const anchorStr = freshPlant.lastCare?.[key] ?? null;
+      const anchor = anchorStr
+        ? new Date(anchorStr)
+        : (freshPlant.timestamp ? new Date(freshPlant.timestamp) : new Date());
+      anchor.setHours(0, 0, 0, 0);
+
+      const dueDate = new Date(anchor);
+      dueDate.setDate(anchor.getDate() + intervalDays);
+
+      const plantName = freshPlant.nickname || freshPlant.common_name || freshPlant.species?.split(' ')[0] || 'Plant';
+      const notifId = await scheduleTaskNotification(plantName, label, dueDate);
+      if (notifId) newNotifIds[key] = notifId;
+    }
+
+    if (Object.keys(newNotifIds).length > 0) {
+      await updateHistory(plantId, { notification_ids: newNotifIds });
+    }
   }
 
   // ── Derived values ──────────────────────────────────────────

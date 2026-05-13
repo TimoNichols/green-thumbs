@@ -155,6 +155,7 @@ export default function ReportScreen({ navigation, route }) {
   const [pickedSymptom, setPickedSymptom] = useState(null);
   const [diagnosing, setDiagnosing] = useState(false);
   const [expandedTileData, setExpandedTileData] = useState(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
   const tileOverlayAnim = useRef(new Animated.Value(0)).current;
 
   // When returning from a scan of a manual plant, re-fetch to pick up merged care data
@@ -343,59 +344,7 @@ export default function ReportScreen({ navigation, route }) {
   return (
     <View style={styles.root}>
 
-      {/* ── Hero image / placeholder ──────────────────────────── */}
-      <View style={styles.hero}>
-        {currentPhotoUri ? (
-          <Image
-            source={{ uri: currentPhotoUri }}
-            style={StyleSheet.absoluteFillObject}
-            contentFit="cover"
-          />
-        ) : (
-          <HeroPlaceholder />
-        )}
-
-        {/* Gradient scrim — covers bottom ~60% for text legibility */}
-        <LinearGradient
-          colors={['transparent', 'rgba(14,26,18,0.72)', 'rgba(14,26,18,0.97)']}
-          locations={[0, 0.45, 1]}
-          style={styles.heroScrim}
-        >
-          <Text style={styles.heroSpecies} numberOfLines={2}>
-            <Text style={styles.heroGenusItalic}>{genus}</Text>
-            {epithet ? <Text style={styles.heroEpithet}>{' '}{epithet}</Text> : null}
-          </Text>
-
-          <View style={styles.heroBadgeRow}>
-            {confidencePct != null && (
-              <View style={styles.heroBadge}>
-                <View style={styles.heroBadgeDot} />
-                <Text style={styles.heroBadgeText}>{confidencePct}% match</Text>
-              </View>
-            )}
-            {report.source === 'cache' && (
-              <View style={[styles.heroBadge, styles.heroBadgeSource]}>
-                <Text style={styles.heroBadgeText}>Cached</Text>
-              </View>
-            )}
-          </View>
-        </LinearGradient>
-
-        {/* Photo picker pill — manual plants only */}
-        {isManual && (
-          <Pressable
-            onPress={handlePickPhoto}
-            style={({ pressed }) => [styles.heroPhotoBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Ico.Gallery color="#F4F1E8" size={15} />
-            <Text style={styles.heroPhotoBtnText}>
-              {currentPhotoUri ? 'Change photo' : 'Add photo'}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* ── Floating back + more buttons ────────────────────────── */}
+      {/* ── Floating back + more buttons (stays fixed over scroll) ── */}
       <View
         style={[styles.floatingHeader, { top: Math.max(44, insets.top + 8) }]}
         pointerEvents="box-none"
@@ -416,12 +365,71 @@ export default function ReportScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* ── Content ScrollView ───────────────────────────────────── */}
+      {/* ── Single ScrollView: hero + content scroll together ──── */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Hero image / placeholder ──────────────────────────── */}
+        <View style={styles.hero}>
+          {currentPhotoUri ? (
+            <Pressable
+              onPress={() => setShowPhotoModal(true)}
+              style={StyleSheet.absoluteFillObject}
+            >
+              <Image
+                source={{ uri: currentPhotoUri }}
+                style={StyleSheet.absoluteFillObject}
+                contentFit="cover"
+              />
+            </Pressable>
+          ) : (
+            <HeroPlaceholder />
+          )}
+
+          {/* Gradient scrim — covers bottom ~60% for text legibility */}
+          <LinearGradient
+            colors={['transparent', 'rgba(14,26,18,0.72)', 'rgba(14,26,18,0.97)']}
+            locations={[0, 0.45, 1]}
+            style={styles.heroScrim}
+            pointerEvents="none"
+          >
+            <Text style={styles.heroSpecies} numberOfLines={2}>
+              <Text style={styles.heroGenusItalic}>{genus}</Text>
+              {epithet ? <Text style={styles.heroEpithet}>{' '}{epithet}</Text> : null}
+            </Text>
+
+            <View style={styles.heroBadgeRow}>
+              {confidencePct != null && (
+                <View style={styles.heroBadge}>
+                  <View style={styles.heroBadgeDot} />
+                  <Text style={styles.heroBadgeText}>{confidencePct}% match</Text>
+                </View>
+              )}
+              {report.source === 'cache' && (
+                <View style={[styles.heroBadge, styles.heroBadgeSource]}>
+                  <Text style={styles.heroBadgeText}>Cached</Text>
+                </View>
+              )}
+            </View>
+          </LinearGradient>
+
+          {/* Photo picker pill — manual plants only */}
+          {isManual && (
+            <Pressable
+              onPress={handlePickPhoto}
+              style={({ pressed }) => [styles.heroPhotoBtn, pressed && { opacity: 0.7 }]}
+            >
+              <Ico.Gallery color="#F4F1E8" size={15} />
+              <Text style={styles.heroPhotoBtnText}>
+                {currentPhotoUri ? 'Change photo' : 'Add photo'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* ── Content ─────────────────────────────────────────────── */}
+        <View style={styles.content}>
         {/* ── Name + badges ──────────────────────────────────────── */}
         <View style={styles.nameBlock}>
           {editingName ? (
@@ -670,7 +678,31 @@ export default function ReportScreen({ navigation, route }) {
             <Text style={styles.saveBtnText}>+ Save to My Plants</Text>
           </Pressable>
         )}
+        </View>
       </ScrollView>
+
+      {/* ── Fullscreen photo modal ───────────────────────────────── */}
+      <Modal
+        visible={showPhotoModal}
+        transparent={false}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowPhotoModal(false)}
+      >
+        <View style={styles.photoModal}>
+          <Image
+            source={{ uri: currentPhotoUri }}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="contain"
+          />
+          <Pressable
+            onPress={() => setShowPhotoModal(false)}
+            style={[styles.photoModalClose, { top: Math.max(44, insets.top + 8) }]}
+          >
+            <Text style={styles.photoModalCloseText}>✕</Text>
+          </Pressable>
+        </View>
+      </Modal>
 
       {/* ── Expanded care tile overlay ────────────────────────────── */}
       <Modal
@@ -872,6 +904,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 22,
     paddingBottom: 64,
+  },
+
+  // ── Fullscreen photo modal
+  photoModal: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  photoModalClose: {
+    position: 'absolute',
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoModalCloseText: {
+    fontFamily: fonts.sans,
+    fontSize: 16,
+    color: '#F4F1E8',
+    lineHeight: 18,
   },
 
   // ── Name block

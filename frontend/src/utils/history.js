@@ -28,6 +28,7 @@ function fromRow(row) {
     lastCare: row.last_care ?? {},
     notes: row.notes ?? null,
     nickname: row.nickname ?? null,
+    notification_ids: row.notification_ids ?? {},
   };
 }
 
@@ -54,6 +55,7 @@ function toRow(report) {
     last_care: report.lastCare ?? {},
     notes: report.notes ?? null,
     nickname: report.nickname ?? null,
+    notification_ids: report.notification_ids ?? {},
   };
 }
 
@@ -80,6 +82,7 @@ function updatesToRow(updates) {
     lastCare: "last_care",
     notes: "notes",
     nickname: "nickname",
+    notification_ids: "notification_ids",
   };
   const row = {};
   for (const [appKey, dbKey] of Object.entries(fieldMap)) {

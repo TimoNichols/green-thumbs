@@ -15,6 +15,7 @@ import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 
 import RootNavigator from './src/navigation/RootNavigator';
 import { AuthProvider } from './src/context/AuthContext';
+import { requestNotificationPermissions } from './src/utils/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,6 +31,7 @@ function App() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      requestNotificationPermissions();
     }
   }, [fontsLoaded, fontError]);
 
