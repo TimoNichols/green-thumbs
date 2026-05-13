@@ -3,13 +3,19 @@
     "name": "green-thumbs",
     "slug": "green-thumbs",
     "version": "1.0.0",
+    "owner": "timnichols",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "greenthumbs",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.timonichols.greenthumbs",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +25,13 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.timonichols.greenthumbs",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -41,6 +53,11 @@
       "expo-font",
       "expo-camera",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "83fe1563-9dfb-4063-bf9c-a38cbf055966"
+      }
+    }
   }
 }

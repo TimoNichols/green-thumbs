@@ -19,7 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { colors, fonts, radii } from '../utils/theme';
 import * as Ico from '../components/Ico';
-import { addToHistory, updateHistory, getHistory, uploadPlantPhoto } from '../utils/history';
+import { addToHistory, updateHistory, getHistory, deleteFromHistory, uploadPlantPhoto } from '../utils/history';
 import { fetchDiagnosis } from '../utils/api';
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -194,6 +194,25 @@ export default function ReportScreen({ navigation, route }) {
   ];
 
   const diffColors = diffPillColors(report.difficulty);
+
+  function handleMoreMenu() {
+    if (!report.id) return;
+    Alert.alert(
+      report.common_name || report.species || 'Plant',
+      undefined,
+      [
+        {
+          text: 'Delete plant',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteFromHistory(report.id, currentPhotoUri);
+            navigation.goBack();
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+    );
+  }
 
   async function handleSave() {
     if (!report.id) await addToHistory(report);
@@ -373,9 +392,14 @@ export default function ReportScreen({ navigation, route }) {
         >
           <Ico.Back color="#F4F1E8" size={18} />
         </Pressable>
-        <Pressable style={({ pressed }) => [styles.floatBtn, pressed && { opacity: 0.7 }]}>
-          <Ico.More color="#F4F1E8" size={18} />
-        </Pressable>
+        {!!report.id && (
+          <Pressable
+            onPress={handleMoreMenu}
+            style={({ pressed }) => [styles.floatBtn, pressed && { opacity: 0.7 }]}
+          >
+            <Ico.More color="#F4F1E8" size={18} />
+          </Pressable>
+        )}
       </View>
 
       {/* ── Content ScrollView ───────────────────────────────────── */}

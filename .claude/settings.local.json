@@ -30,7 +30,9 @@
       "Bash(git -C 'D:\\\\GreenThumbsApp\\\\green-thumbs' commit -m ' *)",
       "Bash(git *)",
       "mcp__claude_ai_Supabase__get_project",
-      "WebFetch(domain:green-thumbs-production.up.railway.app)"
+      "WebFetch(domain:green-thumbs-production.up.railway.app)",
+      "Bash(eas whoami *)",
+      "PowerShell(Get-Command *)"
     ]
   }
 }

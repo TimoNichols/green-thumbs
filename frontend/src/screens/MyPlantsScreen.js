@@ -25,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { colors, fonts, radii } from '../utils/theme';
-import { getHistory, deleteFromHistory, addToHistory } from '../utils/history';
+import { getHistory, addToHistory } from '../utils/history';
 import { getWishlist, addToWishlist, deleteFromWishlist } from '../utils/wishlist';
 import { fetchCare } from '../utils/api';
 import { getHomeEnvironment } from '../utils/homeEnvironment';
@@ -97,7 +97,7 @@ function SwipeableRow({ children, onDelete, simultaneousHandlers }) {
 }
 
 // ─── Plant row ────────────────────────────────────────────────
-function PlantRow({ item, onPress, onMenuPress }) {
+function PlantRow({ item, onPress }) {
   const genus = item.species?.split(' ')[0] ?? item.common_name?.split(' ')[0] ?? 'Plant';
   const displayName = item.common_name || item.species || 'Unknown';
   const showBinomial = !!item.common_name && !!item.species;
@@ -128,13 +128,6 @@ function PlantRow({ item, onPress, onMenuPress }) {
           <Text style={styles.pillHealthyText}>Healthy</Text>
         </View>
       )}
-      <Pressable
-        onPress={onMenuPress}
-        hitSlop={8}
-        style={({ pressed }) => [styles.rowMenuBtn, pressed && { opacity: 0.5 }]}
-      >
-        <Ico.More color={colors.textMute} size={16} />
-      </Pressable>
     </Pressable>
   );
 }
@@ -409,12 +402,6 @@ export default function MyPlantsScreen({ navigation }) {
     filter === 'Flagged'  ? items.filter((i) => !!i.symptom) :
     items;
 
-  async function handleDeletePlant(id, photoUri) {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    await deleteFromHistory(id, photoUri);
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }
-
   async function handleDeleteWishlist(id) {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     await deleteFromWishlist(id);
@@ -520,27 +507,12 @@ export default function MyPlantsScreen({ navigation }) {
           keyExtractor={(item) => `${reloadKey}-${item.id}`}
           renderItem={({ item }) =>
             tab === 'plants' ? (
-              <SwipeableRow
-                onDelete={() => handleDeletePlant(item.id, item.photoUri)}
-                simultaneousHandlers={flatListRef}
-              >
+              <View style={styles.plantRowWrap}>
                 <PlantRow
                   item={item}
                   onPress={() => navigation.navigate('Report', { report: item })}
-                  onMenuPress={() => Alert.alert(
-                    item.common_name || item.species || 'Plant',
-                    undefined,
-                    [
-                      {
-                        text: 'Delete plant',
-                        style: 'destructive',
-                        onPress: () => handleDeletePlant(item.id, item.photoUri),
-                      },
-                      { text: 'Cancel', style: 'cancel' },
-                    ],
-                  )}
                 />
-              </SwipeableRow>
+              </View>
             ) : (
               <WishlistRow
                 item={item}
@@ -690,7 +662,10 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   rowPhoto: { width: 64, height: 64, borderRadius: 14, flexShrink: 0 },
-  rowMenuBtn: { padding: 4, marginLeft: 4, flexShrink: 0 },
+  plantRowWrap: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+  },
   rowInfo: {
     flex: 1,
     marginLeft: 12,
