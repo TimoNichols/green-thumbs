@@ -225,7 +225,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.upNextText}>
               <Text style={styles.upNextName} numberOfLines={1}>
                 {upNext
-                  ? `Water ${upNext.common_name || upNext.species?.split(' ')[0] || 'plant'}`
+                  ? `Water ${upNext.nickname || upNext.common_name || upNext.species?.split(' ')[0] || 'plant'}`
                   : 'Add your first plant'}
               </Text>
               <Text style={styles.upNextSub}>

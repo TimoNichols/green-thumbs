@@ -145,7 +145,7 @@ function buildTasksFromHistory(history) {
         id: `${key}_${plant.id}`,
         plantId: plant.id,
         plant,
-        plantName: plant.common_name || plant.species?.split(' ')[0] || 'Plant',
+        plantName: plant.nickname || plant.common_name || plant.species?.split(' ')[0] || 'Plant',
         taskKey: key,
         taskLabel: label,
         taskColor: color,

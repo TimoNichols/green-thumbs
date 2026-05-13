@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -147,6 +148,9 @@ export default function ReportScreen({ navigation, route }) {
 
   const [currentReport, setCurrentReport] = useState(initialReport ?? null);
   const [currentPhotoUri, setCurrentPhotoUri] = useState(initialReport?.photoUri ?? null);
+  const [nickname, setNickname] = useState(initialReport?.nickname ?? '');
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(initialReport?.nickname ?? '');
   const [showSymptomPicker, setShowSymptomPicker] = useState(false);
   const [pickedSymptom, setPickedSymptom] = useState(null);
   const [diagnosing, setDiagnosing] = useState(false);
@@ -194,6 +198,16 @@ export default function ReportScreen({ navigation, route }) {
   ];
 
   const diffColors = diffPillColors(report.difficulty);
+
+  async function handleSaveNickname() {
+    const trimmed = draftName.trim();
+    setEditingName(false);
+    if (trimmed === nickname) return;
+    setNickname(trimmed);
+    if (currentReport?.id) {
+      await updateHistory(currentReport.id, { nickname: trimmed || null });
+    }
+  }
 
   function handleMoreMenu() {
     if (!report.id) return;
@@ -410,9 +424,40 @@ export default function ReportScreen({ navigation, route }) {
       >
         {/* ── Name + badges ──────────────────────────────────────── */}
         <View style={styles.nameBlock}>
-          <Text style={styles.commonName} numberOfLines={2}>
-            {report.common_name || report.species || 'Unknown Plant'}
-          </Text>
+          {editingName ? (
+            <TextInput
+              style={styles.nicknameInput}
+              value={draftName}
+              onChangeText={setDraftName}
+              onBlur={handleSaveNickname}
+              onSubmitEditing={handleSaveNickname}
+              autoFocus
+              placeholder={report.common_name || report.species || 'Add a nickname'}
+              placeholderTextColor={colors.textMute}
+              returnKeyType="done"
+              autoCapitalize="words"
+            />
+          ) : (
+            <View style={styles.nameRow}>
+              <Text style={styles.commonName} numberOfLines={2}>
+                {nickname || report.common_name || report.species || 'Unknown Plant'}
+              </Text>
+              {!!report.id && (
+                <Pressable
+                  onPress={() => { setDraftName(nickname); setEditingName(true); }}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.renameBtn, pressed && { opacity: 0.5 }]}
+                >
+                  <Text style={styles.renameBtnText}>{nickname ? 'Rename' : 'Nickname'}</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+          {!!nickname && (
+            <Text style={styles.botanicalSubname} numberOfLines={1}>
+              {report.common_name || report.species}
+            </Text>
+          )}
           <View style={styles.badgeRow}>
             {report.source === 'cache' && (
               <View style={styles.sourceBadge}>
@@ -833,13 +878,47 @@ const styles = StyleSheet.create({
   nameBlock: {
     marginBottom: 22,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 10,
+  },
   commonName: {
+    flex: 1,
     fontFamily: fonts.serif,
     fontSize: 28,
     lineHeight: 32,
     color: colors.text,
     letterSpacing: -0.3,
+  },
+  botanicalSubname: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.textMute,
+    marginTop: -4,
     marginBottom: 10,
+  },
+  nicknameInput: {
+    fontFamily: fonts.serif,
+    fontSize: 28,
+    lineHeight: 32,
+    color: colors.text,
+    letterSpacing: -0.3,
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.pine,
+    paddingBottom: 4,
+    marginBottom: 10,
+  },
+  renameBtn: {
+    marginTop: 6,
+    flexShrink: 0,
+  },
+  renameBtnText: {
+    fontFamily: fonts.sansBold,
+    fontSize: 11.5,
+    color: colors.leaf,
+    textDecorationLine: 'underline',
   },
   badgeRow: {
     flexDirection: 'row',

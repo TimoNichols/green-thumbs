@@ -27,6 +27,7 @@ function fromRow(row) {
     schedule: row.schedule ?? {},
     lastCare: row.last_care ?? {},
     notes: row.notes ?? null,
+    nickname: row.nickname ?? null,
   };
 }
 
@@ -52,6 +53,7 @@ function toRow(report) {
     schedule: report.schedule ?? {},
     last_care: report.lastCare ?? {},
     notes: report.notes ?? null,
+    nickname: report.nickname ?? null,
   };
 }
 
@@ -77,6 +79,7 @@ function updatesToRow(updates) {
     schedule: "schedule",
     lastCare: "last_care",
     notes: "notes",
+    nickname: "nickname",
   };
   const row = {};
   for (const [appKey, dbKey] of Object.entries(fieldMap)) {

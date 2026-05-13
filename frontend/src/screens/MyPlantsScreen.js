@@ -99,8 +99,12 @@ function SwipeableRow({ children, onDelete, simultaneousHandlers }) {
 // ─── Plant row ────────────────────────────────────────────────
 function PlantRow({ item, onPress }) {
   const genus = item.species?.split(' ')[0] ?? item.common_name?.split(' ')[0] ?? 'Plant';
-  const displayName = item.common_name || item.species || 'Unknown';
-  const showBinomial = !!item.common_name && !!item.species;
+  const hasNickname = !!item.nickname;
+  const displayName = item.nickname || item.common_name || item.species || 'Unknown';
+  const subLabel = hasNickname
+    ? (item.common_name || item.species || null)
+    : (item.common_name && item.species ? item.species : null);
+  const showBinomial = !!subLabel;
 
   return (
     <Pressable
@@ -114,7 +118,7 @@ function PlantRow({ item, onPress }) {
       )}
       <View style={styles.rowInfo}>
         <Text style={styles.rowName} numberOfLines={1}>{displayName}</Text>
-        {showBinomial && <Text style={styles.rowBinomial} numberOfLines={1}>{item.species}</Text>}
+        {showBinomial && <Text style={styles.rowBinomial} numberOfLines={1}>{subLabel}</Text>}
         <Text style={styles.rowDate}>{formatDate(item.timestamp)}</Text>
       </View>
       {item.symptom ? (
