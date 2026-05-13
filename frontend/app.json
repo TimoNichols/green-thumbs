@@ -12,7 +12,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.timonichols.greenthumbs",
-      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
