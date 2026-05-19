@@ -1,13 +1,28 @@
 import json
 import os
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
+from supabase import create_client, Client
 from analyzer import analyze_plant, get_care_for_species, diagnose_text, parse_water_interval, parse_care_schedule
 
 load_dotenv()
 
 app = FastAPI(title="Green Thumbs API")
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+_bearer = HTTPBearer()
+
+async def _get_current_user(credentials: HTTPAuthorizationCredentials = Security(_bearer)):
+    try:
+        response = supabase_admin.auth.get_user(credentials.credentials)
+        return response.user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 app.add_middleware(
     CORSMiddleware,
@@ -105,6 +120,14 @@ async def diagnose(
         except (json.JSONDecodeError, ValueError):
             care = None
     return await diagnose_text(species.strip(), symptom.strip(), care)
+
+
+@app.delete("/users/me")
+async def delete_me(user=Depends(_get_current_user)):
+    user_id = user.id
+    supabase_admin.table("plants").delete().eq("user_id", user_id).execute()
+    supabase_admin.auth.admin.delete_user(user_id)
+    return {"deleted": True}
 
 
 if __name__ == "__main__":
