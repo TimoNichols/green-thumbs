@@ -7,6 +7,7 @@ import {
   Switch,
   Alert,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +19,8 @@ import { getNotificationsEnabled, setNotificationsEnabled } from '../utils/notif
 import * as Ico from '../components/Ico';
 import HomeEnvironmentCard from '../components/HomeEnvironmentCard';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { API_BASE_URL } from '../utils/api';
 
 // ── Achievement unlock computation ────────────────────────────
 function computeAchievements(history) {
@@ -122,25 +125,31 @@ function Badge({ label, Icon, unlocked }) {
 }
 
 // ── Settings row ──────────────────────────────────────────────
-function SettingsRow({ icon: Icon, label, danger, toggle, toggleValue, onToggleChange, onPress, showBorder }) {
+function SettingsRow({ icon: Icon, label, danger, toggle, toggleValue, onToggleChange, onPress, showBorder, loading, disabled }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={loading || disabled ? null : onPress}
       style={({ pressed }) => [
         styles.settingsRow,
         showBorder && styles.settingsRowBorder,
-        pressed && { opacity: 0.7 },
+        pressed && !loading && !disabled && { opacity: 0.7 },
       ]}
     >
       {Icon && (
-        <View style={styles.settingsIconTile}>
-          <Icon color={colors.pine} size={16} />
+        <View style={[styles.settingsIconTile, danger && styles.settingsIconTileDanger]}>
+          <Icon color={danger ? colors.danger : colors.pine} size={16} />
         </View>
       )}
-      <Text style={[styles.settingsLabel, danger && styles.settingsLabelDanger]}>
+      <Text style={[
+        styles.settingsLabel,
+        danger && styles.settingsLabelDanger,
+        danger && !!Icon && { textAlign: 'left' },
+      ]}>
         {label}
       </Text>
-      {toggle ? (
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.danger} />
+      ) : toggle ? (
         <Switch
           value={toggleValue}
           onValueChange={onToggleChange}
@@ -161,6 +170,7 @@ export default function ProfileScreen() {
   const [unlocked, setUnlocked] = useState({});
   const [engagement, setEngagement] = useState({ streak: 0, thisWeek: 0, lastCheck: '—' });
   const [notificationsOn, setNotificationsOn] = useState(true);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -181,6 +191,37 @@ export default function ProfileScreen() {
 
   function comingSoon() {
     Alert.alert('Coming soon', 'This feature is coming in a future update.');
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete account?',
+      'This will permanently delete your account and all your plant data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: confirmDeleteAccount },
+      ]
+    );
+  }
+
+  async function confirmDeleteAccount() {
+    setDeletingAccount(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('No session');
+
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error(`Server error ${response.status}`);
+
+      await signOut();
+      // RootNavigator swaps to AuthNavigator automatically when user becomes null
+    } catch {
+      setDeletingAccount(false);
+      Alert.alert('Something went wrong', 'Please try again.');
+    }
   }
 
   return (
@@ -265,6 +306,15 @@ export default function ProfileScreen() {
           label="Sign out"
           showBorder
           onPress={signOut}
+        />
+        <SettingsRow
+          icon={Ico.Trash}
+          danger
+          label="Delete account"
+          showBorder
+          onPress={handleDeleteAccount}
+          loading={deletingAccount}
+          disabled={deletingAccount}
         />
       </View>
 
@@ -447,6 +497,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  settingsIconTileDanger: {
+    backgroundColor: 'rgba(168, 69, 69, 0.10)',
   },
   settingsLabel: {
     flex: 1,
