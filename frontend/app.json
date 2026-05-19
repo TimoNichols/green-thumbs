@@ -13,7 +13,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.timonichols.greenthumbs",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Green Thumbs uses your camera to photograph plants for identification. For example, point your camera at a houseplant to identify its species and get personalised care advice."
       }
     },
     "android": {
