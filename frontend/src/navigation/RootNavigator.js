@@ -20,6 +20,7 @@ import AnalyzingScreen from '../screens/AnalyzingScreen';
 import ReportScreen from '../screens/ReportScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import HealthTimelineScreen from '../screens/HealthTimelineScreen';
 
 const Stack    = createNativeStackNavigator();
 const Tab      = createBottomTabNavigator();
@@ -177,6 +178,11 @@ export default function RootNavigator() {
       <Stack.Screen
         name="Report"
         component={ReportScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="HealthTimeline"
+        component={HealthTimelineScreen}
         options={{ animation: 'slide_from_right' }}
       />
     </Stack.Navigator>

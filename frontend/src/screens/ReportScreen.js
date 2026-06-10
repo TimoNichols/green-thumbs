@@ -506,6 +506,49 @@ export default function ReportScreen({ navigation, route }) {
           </View>
         )}
 
+        {/* ── Health Log entry (saved plants only) ──────────────── */}
+        {!!report.id && (
+          <Pressable
+            onPress={() => navigation.navigate('HealthTimeline', {
+              plantId: report.id,
+              plantName: nickname || report.common_name || report.species || 'Plant',
+            })}
+            style={({ pressed }) => [{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              marginHorizontal: 24,
+              marginTop: 16,
+              paddingVertical: 16,
+              paddingHorizontal: 16,
+              backgroundColor: colors.bgRaise,
+              borderRadius: radii.xl,
+              borderWidth: 1,
+              borderColor: colors.line,
+            }, pressed && { opacity: 0.85 }]}
+          >
+            <View style={{
+              width: 34,
+              height: 34,
+              borderRadius: 17,
+              backgroundColor: colors.bgSage,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Ico.Leaf color={colors.pine} size={18} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: fonts.sansBold, fontSize: 15, color: colors.text }}>
+                Health Log
+              </Text>
+              <Text style={{ fontFamily: fonts.sans, fontSize: 12.5, color: colors.textMute, marginTop: 2 }}>
+                Track check-ins and health over time
+              </Text>
+            </View>
+            <Ico.Chevron color={colors.textMute} size={18} />
+          </Pressable>
+        )}
+
         {/* ── Something wrong? — manual plants ──────────────────── */}
         {isManual && (
           <View style={styles.symptomPickerWrap}>
