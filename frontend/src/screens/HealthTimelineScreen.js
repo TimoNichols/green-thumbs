@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -43,7 +43,7 @@ function formatDate(iso) {
       year: 'numeric',
     });
   } catch {
-    return '';
+    return '—';
   }
 }
 
@@ -154,6 +154,9 @@ export default function HealthTimelineScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { plantId, plantName } = route.params ?? {};
 
+  const isMounted = useRef(true);
+  useEffect(() => () => { isMounted.current = false; }, []);
+
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -166,6 +169,7 @@ export default function HealthTimelineScreen({ navigation, route }) {
   const load = useCallback(async () => {
     setLoading(true);
     const rows = await getHealthLogs(plantId);
+    if (!isMounted.current) return;
     setLogs(rows);
     setLoading(false);
   }, [plantId]);
@@ -210,6 +214,7 @@ export default function HealthTimelineScreen({ navigation, route }) {
     if (saving) return;
     setSaving(true);
     const created = await addHealthLog({ plantId, healthScore: score, notes, photoUri });
+    if (!isMounted.current) return;
     setSaving(false);
     if (created) {
       setModalOpen(false);
@@ -441,6 +446,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.sheet,
     paddingHorizontal: 24,
     paddingTop: 10,
+    shadowColor: '#0F1A12',
+    shadowOpacity: 0.18,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: -12 },
+    elevation: 12,
   },
   sheetHandle: {
     alignSelf: 'center',
