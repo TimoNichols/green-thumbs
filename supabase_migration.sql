@@ -100,3 +100,22 @@ CREATE TRIGGER plants_updated_at
 CREATE TRIGGER home_environment_updated_at
   BEFORE UPDATE ON home_environment
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ─── Health logs (Plant Health Timeline) ──────────────────────
+
+CREATE TABLE health_logs (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  plant_id     UUID        NOT NULL REFERENCES plants(id) ON DELETE CASCADE,
+  user_id      UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  health_score INT         NOT NULL CHECK (health_score BETWEEN 1 AND 5),
+  notes        TEXT,
+  photo_url    TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE health_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own health logs" ON health_logs
+  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE INDEX health_logs_plant_created ON health_logs (plant_id, created_at DESC);
